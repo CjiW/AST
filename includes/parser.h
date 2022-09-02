@@ -16,14 +16,15 @@ typedef struct ASTTree {
     int type;
     struct data {
         int type;
-        char* data;
+        char *data;
     } data;
 } ASTTree;
 
-typedef struct VariableDefNode {
+typedef struct IdentDefNode {
     int size;            // define num
-    char* variable[20];  // names
-    struct VariableDefNode* next;
+    char *idents[25];  // names
+    int ident_type[20];
+    struct IdentDefNode* next;
 } VDN;
 
 typedef enum DataType {
@@ -111,9 +112,9 @@ void showType(int cur_type);
 
 void preorderTranverse(ASTTree* root, int depth);
 
-int addName(char* token_text);
+int addName(char* token_text, int ident_type);
 
-int checkname_exist(char* token_text);
+int checkName(char* token_text, int ident_type);
 
 ASTTree* ArrayDef();
 

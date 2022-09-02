@@ -12,8 +12,12 @@ typedef enum TokenType {
     IDENT,
     // 整形常量
     INT_CONST,
+    // 长整型常量
+    LONG_CONST,
     // 浮点型常量
     FLOAT_CONST,
+    // 双精度浮点型常量
+    DOUBLE_CONST,
     // 字符型常量
     CHAR_CONST,
     // 字符串常量
@@ -70,7 +74,7 @@ typedef enum TokenType {
     SEMI,
     // 符号 ,
     COMMA,
-    /*EQ到MINUSMINUS为运算符，必须连在一起*/
+    /*运算符，必须连在一起*/
     // 1 运算符 ==
     EQ,
     // 2 运算符 !=
@@ -94,9 +98,9 @@ typedef enum TokenType {
     // 11运算符 <
     LESS,
     // 12运算符 >=
-    MOREEQUAL,
+    MOREEQ,
     // 13运算符 <=
-    LESSEQUAL,
+    LESSEQ,
     // 14运算符 -
     MINUS,
     // 15运算符&&
@@ -108,7 +112,7 @@ typedef enum TokenType {
     // 头文件
     INCLUDE,
     // 宏
-    MACRO,
+    DEFINE,
     // 数组
     ARRAY,
 } TokenType;

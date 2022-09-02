@@ -25,8 +25,14 @@ int lexicalAnalyse() {
                 case INT_CONST:
                     printf("%14s", "INT_CONST");
                     break;
+                case LONG_CONST:
+                    printf("%14s", "LONG_CONST");
+                    break;
                 case FLOAT_CONST:
                     printf("%14s", "FLOAT_CONST");
+                    break;
+                case DOUBLE_CONST:
+                    printf("%14s", "DOUBLE_CONST");
                     break;
                 case CHAR_CONST:
                     printf("%14s", "CHAR_CONST");
@@ -145,20 +151,20 @@ int lexicalAnalyse() {
                 case MORE:
                     printf("%14s", "MORE");
                     break;
-                case MOREEQUAL:
-                    printf("%14s", "MOREEQUAL");
+                case MOREEQ:
+                    printf("%14s", "MOREEQ");
                     break;
                 case LESS:
                     printf("%14s", "LESS");
                     break;
-                case LESSEQUAL:
-                    printf("%14s", "LESSEQUAL");
+                case LESSEQ:
+                    printf("%14s", "LESSEQ");
                     break;
                 case INCLUDE:
                     printf("%14s", "INCLUDE");
                     break;
-                case MACRO:
-                    printf("%14s", "MACRO");
+                case DEFINE:
+                    printf("%14s", "DEFINE");
                     break;
                 case ARRAY:
                     printf("%14s", "ARRAY");
@@ -174,7 +180,7 @@ int lexicalAnalyse() {
             }
             printf("\t%s\n", token_text_);
         } else {
-            printf("\tError in row_ %d, col_ %d\n", row_, col_);
+            printf("\tError in row_ %d\n", row_);
             break;
         }
     } while (type != EOF);

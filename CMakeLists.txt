@@ -14,5 +14,4 @@ add_executable(ast
         parser/parser.c
         stack/stack.c
         token/token.c
-        #hash_table/hash_table.c
         )

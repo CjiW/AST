@@ -1,9 +1,8 @@
 #include "token.h"
 
 char token_text_[128]; //存放单词自身值
-char string_num_[128]; //存放数字的字符串
+int text_idx_ = 0;
 int row_ = 1;
-int col_ = 1;
 
 int isSpace(char c) {
     return (c == ' ' || c == '\n' || c == '\t' || c == '\v' || c == '\f');
@@ -21,39 +20,39 @@ int isAlpha(char c) {
 
 int isLetterOrNum(char c) { return isAlpha(c) || isNum(c); }
 
-int add2token(char *token, char c) {
-    int i = 0;
-    while (*(token + i) != '\0') {
-        i++;
-    }
+void clearToken(){
+    memset(token_text_, 0, sizeof token_text_);
+    text_idx_ = 0;
+}
+
+int add2token(char c) {
     /* max len : 128 */
-    if (i >= 127) {
+    if (text_idx_ >= 127) {
+        printf("Word Too Long!\n");
         return -1; //添加失败
     }
-    *(token + i) = c;
-    *(token + i + 1) = '\0';
+    *(token_text_ + text_idx_) = c;
+    *(token_text_ + text_idx_ + 1) = '\0';
+    text_idx_++;
     return 1;
 }
 
 int getToken(FILE *fp) {
     char c;
-    *(token_text_) = '\0';
+    clearToken();
     // eat Space
     do {
         c = fgetc(fp);
-        col_++;
         if (c == '\n') {
             row_++;
-            col_ = 1;
         }
     } while (isSpace(c));
 
     // IDENT、ARRAY or KEYWORD
     if (isAlpha(c) || c == '_') {
         do {
-            add2token(token_text_, c);
-            col_++;
-        } while (c = fgetc(fp), isLetterOrNum(c));
+            add2token(c);
+        } while (c = fgetc(fp), isLetterOrNum(c)||c == '_');
         ungetc(c, fp);
         if (strcmp(token_text_, "int") == 0) { return INT; }
         if (strcmp(token_text_, "double") == 0) { return DOUBLE; }
@@ -79,21 +78,16 @@ int getToken(FILE *fp) {
 
         if (c == '[') {
             // ARRAY
-            add2token(token_text_, c);
-            col_++;
+            add2token(c);
             c = fgetc(fp);
-            while (c >= '0' && c <= '9') {
-                add2token(token_text_, c);
-                col_++;
-                add2token(string_num_, c);
-                col_++;
+            while (isNum(c)) {
+                add2token(c);
                 c = fgetc(fp);
             }
             if (c != ']') {
                 return ERROR_TOKEN;
             }
-            add2token(token_text_, c);
-            col_++;
+            add2token(c);
             return ARRAY;
         } else {
             ungetc(c, fp);
@@ -104,178 +98,70 @@ int getToken(FILE *fp) {
     // number
     if (isNum(c)) {
         if (c == '0') {
-            add2token(token_text_, c);
-            col_++;
+            add2token(c);
             c = fgetc(fp);
+            // 十六进制
             if (c == 'x' || c == 'X') {
                 do {
-                    add2token(token_text_, c);
-                    col_++;
+                    add2token(c);
                 } while (c = fgetc(fp), isXNum(c));
-                if (c != 'u' && c != 'l') {
-                    if ((!isSpace(c)) && c != ';' && c != ')' && c != '+' && c != '-' &&
-                        c != '*' && c != '/') {
-                        return ERROR_TOKEN;
-                    }
-                    ungetc(c, fp);
-                    return INT_CONST;
-                } else if (c == 'u') {
-                    add2token(token_text_, c);
-                    col_++;
-                    c = fgetc(fp);
-                    if (c == 'l') { // ul
-                        add2token(token_text_, c);
-                        col_++;
-                        c = fgetc(fp);
-                        if (c == 'l') { // ull
-                            add2token(token_text_, c);
-                            col_++;
-                            return INT_CONST;
-                        } else {
-                            ungetc(c, fp);
-                            return INT_CONST;
-                        }
-                    } else { // u
-                        ungetc(c, fp);
-                        return INT_CONST;
-                    }
-                } else { // l
-                    add2token(token_text_, c);
-                    col_++;
-                    return INT_CONST;
+                if (c == 'L' || c == 'l') {
+                    add2token(c);
+                    return LONG_CONST;
                 }
-            }
-            if (isNum(c) && c < '7') {
-                do {
-                    add2token(token_text_, c);
-                    col_++;
-                } while (c = fgetc(fp), isNum(c)&& c < '7');
-                if (c != 'u' && c != 'l') {
-                    if ((!isSpace(c)) && c != ';' && c != ')' && c != '+' && c != '-' &&
-                        c != '*' && c != '/') {
-                        return ERROR_TOKEN;
-                    }
-                    ungetc(c, fp);
-                    return INT_CONST;
-                }else if (c == 'u') {
-                    add2token(token_text_, c);
-                    col_++;
-                    c = fgetc(fp);
-                    if (c == 'l') { // ul
-                        add2token(token_text_, c);
-                        col_++;
-                        c = fgetc(fp);
-                        if (c == 'l') { // ull
-                            add2token(token_text_, c);
-                            col_++;
-                            return INT_CONST;
-                        } else {
-                            ungetc(c, fp);
-                            return INT_CONST;
-                        }
-                    } else { // u
-                        ungetc(c, fp);
-                        return INT_CONST;
-                    }
-                } else { // l
-                    add2token(token_text_, c);
-                    col_++;
-                    return INT_CONST;
-                }
-            }
-            if (c != '.' && c != 'u' && c != 'l'){
-                if ((!isSpace(c)) && c != ';' && c != ')' && c != '+' && c != '-' &&
-                    c != '*' && c != '/') {
+                if ((!isSpace(c)) && c != ';' && c != ')' && c != '+' && c != '-' && c != '*' && c != '/' && c != '|' && c != '&') {
                     return ERROR_TOKEN;
                 }
                 ungetc(c, fp);
                 return INT_CONST;
-            }else if (c == 'u') {
-                add2token(token_text_, c);
-                col_++;
-                c = fgetc(fp);
-                if (c == 'l') { // ul
-                    add2token(token_text_, c);
-                    col_++;
-                    c = fgetc(fp);
-                    if (c == 'l') { // ull
-                        add2token(token_text_, c);
-                        col_++;
-                        return INT_CONST;
-                    } else {
-                        ungetc(c, fp);
-                        return INT_CONST;
-                    }
-                } else { // u
-                    ungetc(c, fp);
-                    return INT_CONST;
-                }
-            } else if(c=='l'){ // l
-                add2token(token_text_, c);
-                col_++;
-                return INT_CONST;
-            }else{
-
             }
-        }
-        do {
-            add2token(token_text_, c);
-            col_++;
-        } while (c = fgetc(fp), isNum(c));
-        if (c != '.' && c != 'u' && c != 'l') {
-            if ((!isSpace(c)) && c != ';' && c != ')' && c != '+' && c != '-' &&
-                c != '*' && c != '/') {
-                return ERROR_TOKEN;
+            // 八进制
+            if (isNum(c) && c <= '7') {
+                do {
+                    add2token(c);
+                } while (c = fgetc(fp), isNum(c)&& c <= '7');
+                if (c == 'L' || c == 'l') {
+                    add2token(c);
+                    return LONG_CONST;
+                }
+                if ((!isSpace(c)) && c != ';' && c != ')' && c != '+' && c != '-' && c != '*' && c != '/') {
+                    return ERROR_TOKEN;
+                }
+                ungetc(c, fp);
+                return INT_CONST;
             }
             ungetc(c, fp);
+            c='0';
+            clearToken();
+        }
+        do {
+            add2token(c);
+        } while (c = fgetc(fp), isNum(c));
+        if (isSpace(c) || c == ';' || c == ')' || c == '+' || c == '-' || c == '*' || c == '/' || c == '|' || c == '&'){
+            ungetc(c, fp);
             return INT_CONST;
-        } else if (c == '.') {
-            c = fgetc(fp);
-            if (!isNum(c)) {
-                return ERROR_TOKEN;
-            } else {
-                ungetc(c, fp);
-                c = '.';
-                add2token(token_text_, c);
-                col_++;
-                c = fgetc(fp);
-                do {
-                    add2token(token_text_, c);
-                    col_++;
-                } while (c = fgetc(fp), isNum(c));
-                if (c == 'f') {
-                    add2token(token_text_, c);
-                    col_++;
-                    return FLOAT_CONST;
-                } else {
-                    ungetc(c, fp);
-                }
+        }
+        if (c == '.') {
+            do {
+                add2token(c);
+            } while (c = fgetc(fp), isNum(c));
+            if (c == 'F' || c == 'f') {
+                add2token(c);
                 return FLOAT_CONST;
             }
-        } else if (c == 'u') {
-            add2token(token_text_, c);
-            col_++;
-            c = fgetc(fp);
-            if (c == 'l') { // ul
-                add2token(token_text_, c);
-                col_++;
-                c = fgetc(fp);
-                if (c == 'l') { // ull
-                    add2token(token_text_, c);
-                    col_++;
-                    return INT_CONST;
-                } else {
-                    ungetc(c, fp);
-                    return INT_CONST;
-                }
-            } else { // u
-                ungetc(c, fp);
-                return INT_CONST;
+            if (c == 'L' || c == 'l') {
+                add2token(c);
+                return DOUBLE_CONST;
             }
-        } else { // l
-            add2token(token_text_, c);
-            col_++;
-            return INT_CONST;
+            if (isSpace(c) || c == ';' || c == ')' || c == '+' || c == '-' || c == '*' || c == '/' || c == '|' || c == '&'){
+                ungetc(c, fp);
+                return DOUBLE_CONST;
+            }
+            return ERROR_TOKEN;
+        }
+        if (c == 'L' || c == 'l'){ // l
+            add2token(c);
+            return LONG_CONST;
         }
     }
 
@@ -283,22 +169,18 @@ int getToken(FILE *fp) {
         // float that starts with `.`
         case '.':
             do {
-                add2token(token_text_, c);
-                col_++;
+                add2token(c);
             } while (c = fgetc(fp), isNum(c));
             ungetc(c, fp);
             return FLOAT_CONST;
 
             // char
         case '\'':
-            add2token(token_text_, '\'');
-            col_++;
+            add2token('\'');
             if ((c = fgetc(fp)) != '\\') {
-                add2token(token_text_, c);
-                col_++;
+                add2token(c);
                 if ((c = fgetc(fp)) == '\'') {
-                    add2token(token_text_, c);
-                    col_++;
+                    add2token(c);
                     return CHAR_CONST;
                 } else {
                     return ERROR_TOKEN;
@@ -306,26 +188,24 @@ int getToken(FILE *fp) {
             } else { //  '\*'
                 c = fgetc(fp);
                 if (c == 'n' || c == 't' || c == '\\' || c == '\'' || c == '\"') {
-                    add2token(token_text_, c);
-                    col_++;
+                    add2token(c);
                     if ((c = fgetc(fp)) == '\'') {
-                        add2token(token_text_, c);
-                        col_++;
+                        add2token(c);
                         return CHAR_CONST;
                     } else {
                         return ERROR_TOKEN;
                     }
                 } else if (c == 'x') { // hex
-                    add2token(token_text_, c);
+                    add2token(c);
                     if (isXNum((c = fgetc(fp)))) {
-                        add2token(token_text_, c);
+                        add2token(c);
                         if (isXNum((c = fgetc(fp)))) {
-                            add2token(token_text_, c);
+                            add2token(c);
                         } else {
                             ungetc(c, fp);
                         }
                         if ((c = fgetc(fp)) == '\'') {
-                            add2token(token_text_, c);
+                            add2token(c);
                             return CHAR_CONST;
                         } else {
                             return ERROR_TOKEN;
@@ -335,26 +215,26 @@ int getToken(FILE *fp) {
                     }
                 } else if (c >= '0' && c <= '7') {
                     // oct
-                    add2token(token_text_, c);
+                    add2token(c);
                     if ((c = fgetc(fp)) >= '0' && c <= '7') {
-                        add2token(token_text_, c);
+                        add2token(c);
                         if ((c = fgetc(fp)) >= '0' && c <= '7') {
-                            add2token(token_text_, c);
+                            add2token(c);
                             if ((c = fgetc(fp)) == '\'') {
-                                add2token(token_text_, c);
+                                add2token(c);
                                 return CHAR_CONST;
                             } else {
                                 return ERROR_TOKEN;
                             }
                         } else if (c == '\'') {
-                            add2token(token_text_, '\'');
+                            add2token('\'');
                             return CHAR_CONST;
                         } else {
                             return ERROR_TOKEN;
                         }
                     } else {
                         if (c == '\'') {
-                            add2token(token_text_, c);
+                            add2token(c);
                             return CHAR_CONST;
                         } else {
                             ungetc(c, fp);
@@ -370,14 +250,14 @@ int getToken(FILE *fp) {
         case '"':
             do {
                 if (c != '\\')
-                    add2token(token_text_, c);
+                    add2token(c);
                 if (c == '\\') {
                     c = fgetc(fp);
-                    add2token(token_text_, c);
+                    add2token(c);
                 }
             } while ((c = fgetc(fp)) != '"' && c != '\n');
             if (c == '"') {
-                add2token(token_text_, '"');
+                add2token('"');
                 return STRING_CONST;
             } else {
                 return ERROR_TOKEN;
@@ -385,55 +265,57 @@ int getToken(FILE *fp) {
 
             // div / comment
         case '/':
-            add2token(token_text_, c);
+            add2token(c);
             if ((c = fgetc(fp)) == '/') {
                 do {
-                    add2token(token_text_, c);
+                    add2token(c);
                 } while ((c = fgetc(fp)) != '\n');
                 ungetc(c, fp);
                 return ANNO;
             } else if (c == '*') {
                 while (1) {
-                    add2token(token_text_, c);
+                    add2token(c);
                     c = fgetc(fp);
                     if (c == '*') {
-                        add2token(token_text_, c);
+                        add2token(c);
                         if ((c = fgetc(fp)) == '/') {
-                            add2token(token_text_, c);
+                            add2token(c);
                             return ANNO;
                         }
                     }
                     if (c == '\n') {
-                        add2token(token_text_, c);
+                        add2token(c);
                         // Align the output
                         c = '\t';
-                        add2token(token_text_, c);
-                        add2token(token_text_, c);
+                        add2token(c);
+                        add2token(c);
                     }
                 }
             } else {
                 ungetc(c, fp);
                 return DIVIDE;
             }
-
-            // macro
         case '#':
-            add2token(token_text_, c);
+            add2token(c);
             if (c = fgetc(fp), isAlpha(c)) {
                 do {
-                    add2token(token_text_, c);
+                    add2token(c);
                 } while (c = fgetc(fp), isAlpha(c));
+
                 if (strcmp(token_text_, "#include") == 0) {
+                    // include
                     do {
-                        add2token(token_text_, c);
-                    } while ((c = fgetc(fp)) != '\n');
-                    ungetc(c, fp);
+                        add2token(c);
+                    } while (c = fgetc(fp),c != '\n');
+                    row_++;
                     return INCLUDE;
                 } else if (strcmp(token_text_, "#define") == 0) {
+                    // define
                     do {
-                        add2token(token_text_, c);
-                    } while ((c = fgetc(fp)) != '\n');
-                    return MACRO;
+                        add2token(c);
+                    } while (c= fgetc(fp), c!='\n');
+                    row_++;
+                    return DEFINE;
                 } else {
                     return ERROR_TOKEN;
                 }
@@ -441,86 +323,86 @@ int getToken(FILE *fp) {
                 return ERROR_TOKEN;
             }
         case ',':
-            add2token(token_text_, c);
+            add2token(c);
             return COMMA;
         case ';':
-            add2token(token_text_, c);
+            add2token(c);
             return SEMI;
         case '=':
             c = fgetc(fp);
             if (c == '=') {
-                add2token(token_text_, c);
-                add2token(token_text_, c);
+                add2token(c);
+                add2token(c);
                 return EQ;
             }
             ungetc(c, fp);
-            add2token(token_text_, '=');
+            add2token('=');
             return ASSIGN;
         case '!':
             c = fgetc(fp);
             if (c == '=') {
-                add2token(token_text_, '!');
-                add2token(token_text_, '=');
+                add2token('!');
+                add2token('=');
                 return NEQ;
             } else {
                 return ERROR_TOKEN;
             }
         case '+':
-            add2token(token_text_, '+');
+            add2token(c);
             return PLUS;
         case '-':
-            add2token(token_text_, '-');
+            add2token(c);
             return MINUS;
         case '(':
-            add2token(token_text_, c);
+            add2token(c);
             return LP;
         case ')':
-            add2token(token_text_, c);
+            add2token(c);
             return RP;
         case '{':
-            add2token(token_text_, c);
+            add2token(c);
             return LB;
         case '}':
-            add2token(token_text_, c);
+            add2token(c);
             return RB;
         case '[':
-            add2token(token_text_, c);
+            add2token(c);
             return LM;
         case ']':
-            add2token(token_text_, c);
+            add2token(c);
             return RM;
         case '*':
-            add2token(token_text_, c);
+            add2token(c);
             return TIMES;
         case '>':
-            add2token(token_text_, c);
+            add2token(c);
             if ((c = fgetc(fp)) == '=') {
-                add2token(token_text_, c);
-                return MOREEQUAL;
+                add2token(c);
+                return MOREEQ;
             } else {
                 ungetc(c, fp);
                 return MORE;
             }
         case '<':
-            add2token(token_text_, c);
+            add2token(c);
             if ((c = fgetc(fp)) == '=') {
-                add2token(token_text_, c);
-                return LESSEQUAL;
+                add2token(c);
+                return LESSEQ;
             } else {
                 ungetc(c, fp);
                 return LESS;
             }
         case '&':
-            add2token(token_text_, c);
+            add2token(c);
             if ((c= fgetc(fp) == '&')){
-                add2token(token_text_, c);
+                add2token(c);
                 return AND;
             }
             return ERROR_TOKEN;
         case '|':
-            add2token(token_text_, c);
+            add2token(c);
             if ((c= fgetc(fp) == '|')){
-                add2token(token_text_, c);
+                add2token(c);
                 return OR;
             }
             return ERROR_TOKEN;

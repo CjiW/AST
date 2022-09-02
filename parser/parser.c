@@ -1,9 +1,8 @@
 #include "parser.h"
-
+#define VAR 0
+#define FUNC 1
 extern char token_text_[128];
-extern char string_num_[128];
 extern int row_;
-extern int col_;
 int w, type;  // token type
 extern FILE* fr;
 
@@ -12,9 +11,6 @@ VDN* VRoot;  // VarName链表根节点
 int isVoid, hasReturn, isInRecycle = 0;
 
 void syntaxAnalyse() {
-    // for (int i = 0; i < HASH_SIZE; i++) {
-    //     idents_[i]=NULL;
-    // }
     ASTTree* root = program();
     if (root == NULL || haveMistake == 1) {
         printf("Syntax Error!\n");
@@ -27,7 +23,7 @@ void syntaxAnalyse() {
 
 ASTTree* program() {
     w = getToken(fr);
-    while (w == ANNO || w == INCLUDE) {
+    while (w == ANNO || w == INCLUDE || w == DEFINE) {
         w = getToken(fr);
     }
     VRoot = (VDN*)malloc(sizeof(VDN));
@@ -67,7 +63,7 @@ ASTTree* ExtDefList() {
     root->l = ExtDef();
     if(haveMistake==1)return NULL;
     w = getToken(fr);
-    while (w == ANNO || w == INCLUDE) {
+    while (w == ANNO || w == INCLUDE || w == DEFINE) {
         w = getToken(fr);
     }
     root->r = ExtDefList();
@@ -76,16 +72,15 @@ ASTTree* ExtDefList() {
 }
 
 ASTTree* ExtDef() {
-    int a;
     if (w != INT && w != DOUBLE && w != CHAR && w != LONG && w != SHORT && w != FLOAT && w != VOID) {
-        printf("Mistake in row_ %d, col_ %d\n", row_, col_);
+        printf("Mistake in row_ %d\n", row_);
         printf("Error: Wrong external define\n");
         haveMistake=1;
         return NULL;
     }
     type = w;
     w = getToken(fr);
-    while (w == ANNO || w == INCLUDE) {
+    while (w == ANNO || w == INCLUDE||w == DEFINE) {
         w = getToken(fr);
     }
     if (w != IDENT && w != ARRAY) {
@@ -94,78 +89,22 @@ ASTTree* ExtDef() {
         haveMistake=1;
         return NULL;
     }
-    a = w;
     char token_text0[20];
     strcpy(token_text0, token_text_);  // var name
     ASTTree* p;
     w = getToken(fr);
-    while (w == ANNO || w == INCLUDE) {
+    while (w == ANNO || w == INCLUDE || w==DEFINE) {
         w = getToken(fr);
     }
     strcpy(token_text_, token_text0);
     if (w == LP) {
         p = FuncDef();
         if(haveMistake==1)return NULL;
-    } else if (a == ARRAY) {  // def of array
-        p = ArrayDef();
-        if(haveMistake==1)return NULL;
     } else {
         p = ExtVarDef();
         if(haveMistake==1)return NULL;
     }
     return p;
-}
-
-ASTTree* ArrayDef() {
-    if (type == VOID) {
-        printf("Error in line %d\n", row_);
-        printf("Error: Can't declare a void type array\n");
-        haveMistake=1;
-        return NULL;
-    }
-    ASTTree* root = (ASTTree*)malloc(sizeof(ASTTree));
-    root->type = ARRAYDEF;
-    root->l = NULL;
-    root->r = NULL;
-    root->data.data = NULL;
-    ASTTree* p = (ASTTree*)malloc(sizeof(ASTTree));
-    p->type = ARRAYTYPE;
-    p->l = NULL;
-    p->r = NULL;
-    if (type == INT) {
-        p->data.data = "int";
-    }
-    if (type == DOUBLE) {
-        p->data.data = "double";
-    }
-    if (type == CHAR) {
-        p->data.data = "char";
-    }
-    if (type == FLOAT) {
-        p->data.data = "float";
-    }
-    if (type == LONG) {
-        p->data.data = "long";
-    }
-    if (type == SHORT) {
-        p->data.data = "short";
-    }
-
-    root->l = p;
-    p = (ASTTree*)malloc(sizeof(ASTTree));
-    p->type = ARRAYNAME;
-    p->l = NULL;
-    p->r = NULL;
-    char* token_text3 = (char*)malloc(20 * sizeof(char));
-    strcpy(token_text3, token_text_);
-    p->data.data = token_text3;
-    root->r = p;
-    ASTTree* q = (ASTTree*)malloc(sizeof(ASTTree));
-    q->type = ARRAYSIZE;
-    q->l = q->r = NULL;
-    q->data.data = string_num_;
-    p->l = q;
-    return root;
 }
 
 ASTTree* ExtVarDef() {
@@ -175,13 +114,13 @@ ASTTree* ExtVarDef() {
     int cnt;
     if (type == VOID) {
         printf("Error in line %d\n", row_);
-        printf("Error: Can't declare a void type variable\n");
+        printf("Error: Can't declare a void type idents\n");
         haveMistake=1;
         return NULL;
     }
 
     int u;
-    u = addName(token_text_);
+    u = addName(token_text_, VAR);
     if(haveMistake==1)return NULL;
     if (u == 1) {
         haveMistake = 1;
@@ -240,7 +179,7 @@ ASTTree* ExtVarDef() {
                 row_--;
             }
             printf("Error in line %d\n", row_);  //%
-            printf("Error: Wrong external define\n");
+            printf("Error: Wrong external define123\n");
             haveMistake=1;
             return NULL;
         }
@@ -248,15 +187,15 @@ ASTTree* ExtVarDef() {
             return root;
         }
         w = getToken(fr);
-        if (w != IDENT) {
+        if (w != IDENT && w != ARRAY) {
             printf("Error in line %d\n", row_);  //%
-            printf("Error: Wrong external define\n");
+            printf("Error: Wrong external define321\n");
             haveMistake=1;
             return NULL;
         }
 
         int u;
-        u = addName(token_text_);
+        u = addName(token_text_, VAR);
         if(haveMistake==1)return NULL;
         if (u == 1) {
             haveMistake = 1;
@@ -280,7 +219,7 @@ ASTTree* ExtVarDef() {
         cnt = row_;
         w = getToken(fr);
 
-        while (w == ANNO || w == INCLUDE) {
+        while (w == ANNO || w == INCLUDE||w==DEFINE) {
             w = getToken(fr);
         }
     }
@@ -297,6 +236,15 @@ ASTTree* FuncDef() {
     p->data.data = NULL;
     p->type = FUNCRETURNTYPE;
     p->data.type = type;
+
+    int u;
+    u = addName(token_text_, FUNC);
+    if(haveMistake==1)return NULL;
+    if (u == 1) {
+        haveMistake = 1;
+        return NULL;
+    }
+
     if (type == INT) {
         p->data.data = "int";
         isVoid = 0;
@@ -350,7 +298,7 @@ ASTTree* FuncDef() {
     q->l = FormParaList();
     if(haveMistake==1)return NULL;
     w = getToken(fr);
-    while (w == ANNO || w == INCLUDE) {
+    while (w == ANNO || w == INCLUDE||w==DEFINE) {
         w = getToken(fr);
     }
     if (w == SEMI) {
@@ -376,7 +324,7 @@ ASTTree* FormParaList() {
     }
 
     w = getToken(fr);
-    while (w == ANNO || w == INCLUDE) {
+    while (w == ANNO || w == INCLUDE||w==DEFINE) {
         w = getToken(fr);
     }
     if (w == RP) {
@@ -384,7 +332,7 @@ ASTTree* FormParaList() {
     }
     if (w == COMMA) {
         w = getToken(fr);
-        while (w == ANNO || w == INCLUDE) {
+        while (w == ANNO || w == INCLUDE||w==DEFINE) {
             w = getToken(fr);
         }
     }
@@ -411,7 +359,7 @@ ASTTree* FormParaDef() {
     }
     type = w;
     w = getToken(fr);
-    while (w == ANNO || w == INCLUDE) {
+    while (w == ANNO || w == INCLUDE||w==DEFINE) {
         w = getToken(fr);
     }
     if (w != IDENT) {
@@ -455,7 +403,7 @@ ASTTree* FormParaDef() {
     p->type = FUNCFORMALPARA;
 
     int u;
-    u = addName(token_text_);
+    u = addName(token_text_, VAR);
     if(haveMistake==1)return NULL;
     if (u == 1) {
         haveMistake = 1;
@@ -476,7 +424,7 @@ ASTTree* CompState() {
     root->l = NULL;
     root->r = NULL;
     w = getToken(fr);
-    while (w == ANNO || w == INCLUDE) {
+    while (w == ANNO || w == INCLUDE||w==DEFINE) {
         w = getToken(fr);
     }
     if (w == INT || w == DOUBLE || w == CHAR || w == LONG || w == SHORT ||
@@ -522,7 +470,7 @@ ASTTree* LocalVarDefList() {
     p->l->l = p->l->r = NULL;
 
     w = getToken(fr);
-    while (w == ANNO || w == INCLUDE) {
+    while (w == ANNO || w == INCLUDE||w==DEFINE) {
         w = getToken(fr);
     }
     ASTTree* q = (ASTTree*)malloc(sizeof(ASTTree));  // VarNameS结点
@@ -540,7 +488,7 @@ ASTTree* LocalVarDefList() {
     q->l->l = q->l->r = NULL;
 
     int u;
-    u = addName(token_text_);
+    u = addName(token_text_, VAR);
     if(haveMistake==1)return NULL;
     if (u == 1) {
         haveMistake = 1;
@@ -549,19 +497,19 @@ ASTTree* LocalVarDefList() {
 
     while (1) {
         w = getToken(fr);
-        while (w == ANNO || w == INCLUDE) {
+        while (w == ANNO || w == INCLUDE||w==DEFINE) {
             w = getToken(fr);
         }
         if (w == SEMI) {
             q->r = NULL;
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
             break;
         } else if (w == COMMA) {
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
             ASTTree* s = (ASTTree*)malloc(sizeof(ASTTree));
@@ -575,7 +523,7 @@ ASTTree* LocalVarDefList() {
             char* token_text1 = (char*)malloc(25 * sizeof(char));
             strcpy(token_text1, token_text_);
             q->l->data.data = token_text1;
-            u = addName(token_text_);
+            u = addName(token_text_, VAR);
             if (u == 1) {
                 freeTree(root);
                 haveMistake = 1;
@@ -583,7 +531,7 @@ ASTTree* LocalVarDefList() {
             }
         } else {
             printf("Error in line %d\n", row_);  //%
-            printf("Error: Wrong definition of variable\n");
+            printf("Error: Wrong definition of idents\n");
             haveMistake=1;
             return NULL;
         }
@@ -616,7 +564,7 @@ ASTTree* StateList() {
         root->l = r1;
         root->r = NULL;
         w = getToken(fr);
-        while (w == ANNO || w == INCLUDE) {
+        while (w == ANNO || w == INCLUDE||w==DEFINE) {
             w = getToken(fr);
         }
         if (w != RB) {
@@ -640,7 +588,7 @@ ASTTree* Statement() {
     switch (w) {
         case IF: {
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
             if (w != LP) {
@@ -651,7 +599,7 @@ ASTTree* Statement() {
             }
 
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
             ASTTree* p1 = (ASTTree*)malloc(sizeof(ASTTree));
@@ -666,17 +614,17 @@ ASTTree* Statement() {
                 return NULL;
             }
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
             if (w == LB) {
                 w = getToken(fr);
-                while (w == ANNO || w == INCLUDE) {
+                while (w == ANNO || w == INCLUDE||w==DEFINE) {
                     w = getToken(fr);
                 }
                 p1->r = StateList();
                 if(haveMistake==1)return NULL;
-            } else if (w == INT_CONST || w == FLOAT_CONST || w == CHAR_CONST ||
+            } else if (w == INT_CONST || w == LONG_CONST|| w == FLOAT_CONST|| w == DOUBLE_CONST || w == CHAR_CONST ||
                        w == IDENT || w == KEYWORD || w == IF || w == WHILE ||
                        w == ELSE || w == FOR || w == DO) {
                 p1->r = Statement();
@@ -689,7 +637,7 @@ ASTTree* Statement() {
             }
             root->l = p1;
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
             if (w == ELSE) {
@@ -699,17 +647,17 @@ ASTTree* Statement() {
                 p2->type = ELSEPART;
                 root->r = p2;
                 w = getToken(fr);
-                while (w == ANNO || w == INCLUDE) {
+                while (w == ANNO || w == INCLUDE||w==DEFINE) {
                     w = getToken(fr);
                 }
                 if (w == LB) {
                     w = getToken(fr);
-                    while (w == ANNO || w == INCLUDE) {
+                    while (w == ANNO || w == INCLUDE||w==DEFINE) {
                         w = getToken(fr);
                     }
                     p2->r = StateList();
                     if(haveMistake==1)return NULL;
-                } else if (w == INT_CONST || w == FLOAT_CONST ||
+                } else if (w == INT_CONST || w == LONG_CONST|| w == FLOAT_CONST|| w == DOUBLE_CONST ||
                            w == CHAR_CONST || w == IDENT || w == KEYWORD) {
                     p2->r = Statement();
                     if(haveMistake==1)return NULL;
@@ -731,7 +679,7 @@ ASTTree* Statement() {
         case WHILE: {
             isInRecycle = 1;
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
             if (w != LP) {
@@ -742,7 +690,7 @@ ASTTree* Statement() {
             }
 
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
             ASTTree* p1 = (ASTTree*)malloc(sizeof(ASTTree));
@@ -764,16 +712,16 @@ ASTTree* Statement() {
             p2->l = NULL;
             p2->r = NULL;
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
             if (w == LB) {
                 w = getToken(fr);
-                while (w == ANNO || w == INCLUDE) {
+                while (w == ANNO || w == INCLUDE||w==DEFINE) {
                     w = getToken(fr);
                 }
                 p2->r = StateList();
-            } else if (w == INT_CONST || w == FLOAT_CONST || w == CHAR_CONST ||
+            } else if (w == INT_CONST || w == LONG_CONST|| w == FLOAT_CONST|| w == DOUBLE_CONST || w == CHAR_CONST ||
                        w == IDENT || w == KEYWORD) {
                 p2->r = Statement();
                 p2->r->r = NULL;
@@ -792,7 +740,7 @@ ASTTree* Statement() {
         case FOR: {
             isInRecycle = 1;
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
             if (w != LP) {
@@ -802,7 +750,7 @@ ASTTree* Statement() {
                 return NULL;
             }
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
             ASTTree* p1 = (ASTTree*)malloc(sizeof(ASTTree));
@@ -818,7 +766,7 @@ ASTTree* Statement() {
                 q->data.data = "None";
             }
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
             q->r = (ASTTree*)malloc(sizeof(ASTTree));  // FOR part 2
@@ -831,7 +779,7 @@ ASTTree* Statement() {
                 q->data.data = "None";
             }
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
             q->r = (ASTTree*)malloc(sizeof(ASTTree));  // FOR part 3
@@ -851,17 +799,17 @@ ASTTree* Statement() {
             p2->type = FORBODY;
             p2->data.data = NULL;
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
             if (w == LB) {
                 w = getToken(fr);
-                while (w == ANNO || w == INCLUDE) {
+                while (w == ANNO || w == INCLUDE||w==DEFINE) {
                     w = getToken(fr);
                 }
                 p2->r = StateList();
                 if(haveMistake==1)return NULL;
-            } else if (w == INT_CONST || w == FLOAT_CONST || w == CHAR_CONST ||
+            } else if (w == INT_CONST || w == LONG_CONST|| w == FLOAT_CONST|| w == DOUBLE_CONST || w == CHAR_CONST ||
                        w == IDENT || w == KEYWORD) {
                 p2->r = Statement();
                 if(haveMistake==1)return NULL;
@@ -889,7 +837,7 @@ ASTTree* Statement() {
             root->l = NULL;
             root->r = NULL;
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
             root->r = Expression(SEMI);
@@ -899,7 +847,7 @@ ASTTree* Statement() {
         case DO: {
             isInRecycle = 1;
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
             if (w != LB) {
@@ -922,13 +870,13 @@ ASTTree* Statement() {
             root->data.data = p1->data.data = p2->data.data = NULL;
 
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
             p1->l = StateList();
             if(haveMistake==1)return NULL;
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
             if (w != WHILE) {
@@ -940,7 +888,7 @@ ASTTree* Statement() {
             }
             root->type = DOWHILESTATEMENT;
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
             if (w != LP) {
@@ -951,7 +899,7 @@ ASTTree* Statement() {
                 return NULL;
             }
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
             p2->l = Expression(RP);
@@ -963,12 +911,12 @@ ASTTree* Statement() {
                 return NULL;
             }
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
             if (w != SEMI) {
                 printf("Error in line %d\n", row_);
-                printf("Error: mising semicolon in do-while\n");
+                printf("Error: missing semicolon in do-while\n");
                 freeTree(root);
                 haveMistake=1;
                 return NULL;
@@ -978,12 +926,12 @@ ASTTree* Statement() {
         }
         case BREAK: {
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
             if (w != SEMI) {
                 printf("Error in line %d\n", row_);
-                printf("Error: mising semicolon in BREAK\n");
+                printf("Error: missing semicolon in BREAK\n");
                 haveMistake=1;
                 return NULL;
             }
@@ -998,12 +946,12 @@ ASTTree* Statement() {
         }
         case CONTINUE: {
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
             if (w != SEMI) {
                 printf("Error in line %d\n", row_);
-                printf("Error: mising semicolon in continue\n");
+                printf("Error: missing semicolon in continue\n");
                 haveMistake=1;
                 return NULL;
             }
@@ -1017,6 +965,8 @@ ASTTree* Statement() {
             return root;
         }
         case INT_CONST:
+        case LONG_CONST:
+        case DOUBLE_CONST:
         case FLOAT_CONST:
         case CHAR_CONST:
         case IDENT:
@@ -1051,12 +1001,15 @@ ASTTree* Expression(int endsym) {
             stack_pop(&op);
         }
         if (w == IDENT) {
-            if (checkname_exist(token_text_) == 0) {
+            if (checkName(token_text_, FUNC)){
+                // TODO: FUNC or VAR
+            }
+            if (!checkName(token_text_, VAR)) {
                 haveMistake = 1;
                 return NULL;
             }
         }
-        if (w == IDENT || w == INT_CONST || w == FLOAT_CONST ||
+        if (w == IDENT || w == INT_CONST || w == LONG_CONST|| w == FLOAT_CONST|| w == DOUBLE_CONST ||
             w == CHAR_CONST || w == ARRAY || w == STRING_CONST) {
             p = (ASTTree*)malloc(sizeof(ASTTree));
             p->data.data = NULL;
@@ -1066,7 +1019,7 @@ ASTTree* Expression(int endsym) {
             p->data.data = token_text1;
             stack_push(&opn,p);
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE) {
+            while (w == ANNO || w == INCLUDE||w==DEFINE) {
                 w = getToken(fr);
             }
         } else if (w == endsym) {
@@ -1076,11 +1029,6 @@ ASTTree* Expression(int endsym) {
             p->data.type = POUND;
             while (((ASTTree*)stack_top(&op))->data.type != POUND) {
                 t2 = ((ASTTree*)stack_top(&opn));
-                // if (!t2 && (((ASTTree*)stack_top(&op))->data.type) != PLUSPLUS &&
-                //     (((ASTTree*)stack_top(&op))->data.type) != MINUSMINUS) {
-                //     error++;
-                //     break;
-                // }
                 if (t2 != NULL)
                     stack_pop(&opn);
                 if (opn.len == 0) {
@@ -1088,11 +1036,6 @@ ASTTree* Expression(int endsym) {
                 } else {
                     t1 = ((ASTTree*)stack_top(&opn));
                 }
-                // if (!t1 && (((ASTTree*)stack_top(&op))->data.type) != PLUSPLUS &&
-                //     (((ASTTree*)stack_top(&op))->data.type) != MINUSMINUS) {
-                //     error++;
-                //     break;
-                // }
                 if (t1 != NULL)
                     stack_pop(&opn);
                 t = ((ASTTree*)stack_top(&op));
@@ -1121,7 +1064,7 @@ ASTTree* Expression(int endsym) {
                     p->data.data = token_text1;
                     stack_push(&op,p);
                     w = getToken(fr);
-                    while (w == ANNO || w == INCLUDE) {
+                    while (w == ANNO || w == INCLUDE||w==DEFINE) {
                         w = getToken(fr);
                     }
                     break;
@@ -1132,17 +1075,12 @@ ASTTree* Expression(int endsym) {
                         stack_pop(&op);
                     }
                     w = getToken(fr);
-                    while (w == ANNO || w == INCLUDE) {
+                    while (w == ANNO || w == INCLUDE||w==DEFINE) {
                         w = getToken(fr);
                     }
                     break;
                 case '>':
                     t2 = ((ASTTree*)stack_top(&opn));
-                    // if (!t2 && (((ASTTree*)stack_top(&op))->data.type) != PLUSPLUS &&
-                    //     (((ASTTree*)stack_top(&op))->data.type) != MINUSMINUS) {
-                    //     error++;
-                    //     break;
-                    // }
                     if (t2 != NULL)
                         stack_pop(&opn);
                     if (opn.len == 0) {
@@ -1150,11 +1088,6 @@ ASTTree* Expression(int endsym) {
                     } else {
                         t1 = ((ASTTree*)stack_top(&opn));
                     }
-                    // if (!t1 && (((ASTTree*)stack_top(&op))->data.type) != PLUSPLUS &&
-                    //     (((ASTTree*)stack_top(&op))->data.type) != MINUSMINUS) {
-                    //     error++;
-                    //     break;
-                    // }
                     if (t1 != NULL)
                         stack_pop(&opn);
                     t = ((ASTTree*)stack_top(&op));
@@ -1176,7 +1109,7 @@ ASTTree* Expression(int endsym) {
                     stack_push(&op,p);
 
                     w = getToken(fr);
-                    while (w == ANNO || w == INCLUDE) {
+                    while (w == ANNO || w == INCLUDE||w==DEFINE) {
                         w = getToken(fr);
                     }
                     break;
@@ -1222,8 +1155,8 @@ char Precede(int c1, int c2) {
             case POUND:
             case MORE:
             case LESS:
-            case MOREEQUAL:
-            case LESSEQUAL:
+            case MOREEQ:
+            case LESSEQ:
             case EQ:
             case NEQ:
             case ASSIGN:
@@ -1247,8 +1180,8 @@ char Precede(int c1, int c2) {
             case DIVIDE:
             case MORE:
             case LESS:
-            case MOREEQUAL:
-            case LESSEQUAL:
+            case MOREEQ:
+            case LESSEQ:
             case EQ:
             case NEQ:
                 return '>';
@@ -1271,8 +1204,8 @@ char Precede(int c1, int c2) {
                 return '=';
             case MORE:
             case LESS:
-            case MOREEQUAL:
-            case LESSEQUAL:
+            case MOREEQ:
+            case LESSEQ:
             case EQ:
             case NEQ:
             case POUND:
@@ -1291,8 +1224,8 @@ char Precede(int c1, int c2) {
             case LP:
             case MORE:
             case LESS:
-            case MOREEQUAL:
-            case LESSEQUAL:
+            case MOREEQ:
+            case LESSEQ:
             case EQ:
             case NEQ:
             case POUND:
@@ -1311,8 +1244,8 @@ char Precede(int c1, int c2) {
             case LP:
             case MORE:
             case LESS:
-            case MOREEQUAL:
-            case LESSEQUAL:
+            case MOREEQ:
+            case LESSEQ:
             case EQ:
             case NEQ:
                 return '<';
@@ -1321,7 +1254,7 @@ char Precede(int c1, int c2) {
             default:
                 return '\0';
         }
-    } else if (c1 == MORE || c1 == LESS || c1 == MOREEQUAL || c1 == LESSEQUAL) {
+    } else if (c1 == MORE || c1 == LESS || c1 == MOREEQ || c1 == LESSEQ) {
         switch (c2) {
             case PLUS:
             case MINUS:
@@ -1334,8 +1267,8 @@ char Precede(int c1, int c2) {
             case RP:
             case MORE:
             case LESS:
-            case MOREEQUAL:
-            case LESSEQUAL:
+            case MOREEQ:
+            case LESSEQ:
             case EQ:
             case NEQ:
             case POUND:
@@ -1352,8 +1285,8 @@ char Precede(int c1, int c2) {
             case LP:
             case MORE:
             case LESS:
-            case MOREEQUAL:
-            case LESSEQUAL:
+            case MOREEQ:
+            case LESSEQ:
                 return '<';
             case OR:
             case AND:
@@ -1376,8 +1309,8 @@ char Precede(int c1, int c2) {
             case LP:
             case MORE:
             case LESS:
-            case MOREEQUAL:
-            case LESSEQUAL:
+            case MOREEQ:
+            case LESSEQ:
             case RP:
             case EQ:
             case NEQ:
@@ -1398,8 +1331,8 @@ char Precede(int c1, int c2) {
             case LP:
             case MORE:
             case LESS:
-            case MOREEQUAL:
-            case LESSEQUAL:
+            case MOREEQ:
+            case LESSEQ:
             case RP:
             case EQ:
             case NEQ:
@@ -1420,8 +1353,8 @@ char Precede(int c1, int c2) {
             case LP:
             case MORE:
             case LESS:
-            case MOREEQUAL:
-            case LESSEQUAL:
+            case MOREEQ:
+            case LESSEQ:
             case RP:
             case EQ:
             case NEQ:
@@ -1611,7 +1544,7 @@ void preorderTranverse(ASTTree* root, int depth) {
     }
 }
 
-int addName(char* token_text) {
+int addName(char* token_text, int ident_type) {
     if (haveMistake == 1) {
         return -1;
     }
@@ -1622,25 +1555,26 @@ int addName(char* token_text) {
     }
 
     for (i = 0; i < (p->size); i++) {
-        if (strcmp(token_text, p->variable[i]) == 0) {
+        if (strcmp(token_text, p->idents[i]) == 0) {
             flag = 1;
             break;
         }
     }
     if (flag == 1) {
         printf("Error in line %d\n", row_);
-        printf("Error: Duplicate variable define\n");
+        printf("Error: Duplicate idents define\n");
         haveMistake = 1;
         return flag;
     }
     char* savename = (char*)malloc(25 * sizeof(char));
     strcpy(savename, token_text);
-    p->variable[p->size] = savename;
+    p->idents[p->size] = savename;
+    p->ident_type[p->size] = ident_type;
     p->size++;
     return flag;
 }
 
-int checkname_exist(char* token_text) {
+int checkName(char* token_text, int ident_type) {
     if (haveMistake == 1) {
         return -1;
     }
@@ -1652,20 +1586,20 @@ int checkname_exist(char* token_text) {
         p = p->next;
     }
     for (i = 0; i < (p->size); i++) {
-        if (strcmp(token_text, p->variable[i]) == 0) {
+        if (strcmp(token_text, p->idents[i]) == 0 && p->ident_type[i]==ident_type) {
             flag = 1;
             break;
         }
     }
     for (i = 0; i < (VRoot->size); i++) {
-        if (strcmp(token_text, VRoot->variable[i]) == 0) {
+        if (strcmp(token_text, VRoot->idents[i]) == 0&& VRoot->ident_type[i]==ident_type) {
             flag = 1;
             break;
         }
     }
     if (flag == 0) {
         printf("Error in line %d\n", row_);
-        printf("Error: Using undeclared variable\n");
+        printf("Error: Using undeclared idents\n");
         exit(0);
         // haveMistake = 1;
     }

@@ -6,7 +6,7 @@ extern int haveMistake;
 void formatCode(){
     int w;
     w = getToken(fr);
-    while (w == ANNO || w == INCLUDE) {
+    while (w == ANNO || w == INCLUDE||w==DEFINE) {
         fprintf(fw, "%s", token_text_);
         fprintf(fw,"\n");
         w = getToken(fr);
