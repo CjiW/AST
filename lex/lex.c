@@ -1,18 +1,15 @@
-#include "lex.h"
-
-extern char token_text_[128];
-extern int row_;
-extern int col_;
-extern FILE* fr;
+#include "header.h"
 
 int lexicalAnalyse() {
     int type;
+    row_ = 1;
+    clearToken();
     if (fr == NULL) {
         printf("fail to open file\n");
         exit(0);
     }
     printf("\nLineNum");
-    printf("%10s","Type");
+    printf("%10s", "Type");
     printf("\tValue\n");
     do {
         type = getToken(fr);
@@ -76,20 +73,8 @@ int lexicalAnalyse() {
                 case FOR:
                     printf("%14s", "FOR");
                     break;
-                case STRUCT:
-                    printf("%14s", "STRUCT");
-                    break;
                 case BREAK:
                     printf("%14s", "BREAK");
-                    break;
-                case SWITCH:
-                    printf("%14s", "SWITCH");
-                    break;
-                case CASE:
-                    printf("%14s", "CASE");
-                    break;
-                case TYPEDEF:
-                    printf("%14s", "TYPEDEF");
                     break;
                 case RETURN:
                     printf("%14s", "RETURN");
@@ -176,7 +161,7 @@ int lexicalAnalyse() {
                     printf("%14s", "OR");
                     break;
                 case EOF:
-                    printf("%14s","EOF");
+                    printf("%14s", "EOF");
             }
             printf("\t%s\n", token_text_);
         } else {
@@ -184,6 +169,6 @@ int lexicalAnalyse() {
             break;
         }
     } while (type != EOF);
-    row_=1;
+    row_ = 1;
     return 0;
 }

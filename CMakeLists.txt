@@ -4,7 +4,7 @@ project(ast)
 
 set(CMAKE_C_STANDARD 11)
 
-include_directories(./includes)
+include_directories(include)
 
 
 add_executable(ast 
@@ -14,4 +14,5 @@ add_executable(ast
         parser/parser.c
         stack/stack.c
         token/token.c
+        symboltable/symboltable.c
         )

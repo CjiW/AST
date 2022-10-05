@@ -1,221 +1,342 @@
-#include "format.h"
-extern FILE *fr;
-extern char token_text_[128];
-extern FILE *fw;
-extern int haveMistake;
-void formatCode(){
-    int w;
-    w = getToken(fr);
-    while (w == ANNO || w == INCLUDE||w==DEFINE) {
-        fprintf(fw, "%s", token_text_);
-        fprintf(fw,"\n");
-        w = getToken(fr);
-    }
-    returnToken(fr);
-    ASTTree* root = program();
-    if (root == NULL || haveMistake == 1) {
+#include "header.h"
+void formatCode() {
+    init();
+    ASTTree *root = program();
+    if (haveMistake == 1) {
         printf("Syntax Error!\n");
         return;
     } else {
+        for (int i = 0; i < include_num; i++) {
+            fprintf(fw, "%s\n", include[i]);
+        }
+        for (int i = 0; i < define_num; i++) {
+            fprintf(fw, "%s\n", define[i]);
+        }
         formatTree(root, 0);
     }
 }
 
-void TABs(int d){
+void TABs(int d) {
     for (int i = 0; i < d; i++) {
-        fprintf(fw,"    ");
+        fprintf(fw, "    ");
     }
 }
-void formatTree(ASTTree*T, int depth){
-
+void formatTree(ASTTree *T, int depth){
+    int tmp;
     switch (T->type) {
-        //     EXTDEFLIST = 1,      外部定义序列
+        // //外部定义序列
+        // EXTDEFLIST
         case EXTDEFLIST:
-            if(T->l)formatTree(T->l,depth);
-            if(T->r)formatTree(T->r,depth);
+            if (T->l)formatTree(T->l, depth);
+            if (T->r)formatTree(T->r, depth);
             break;
-        //     EXTVARDEF,           外部变量定义
+        // //外部变量定义
+        // EXTVARDEF,
         case EXTVARDEF:
-            formatTree(T->l,depth);
-            formatTree(T->r,depth);
-            break;
-        //     EXTVARTYPE,          外部变量类型
-        case EXTVARTYPE:
-            fprintf(fw,"%s",T->data.data);
-            break;
-        //     EXTVARLIST,          外部变量名序列
-        case EXTVARLIST:
-            formatTree(T->l,depth);
-            if(T->r)formatTree(T->r,depth);
-            if(!T->r){
-                fseek(fw,-1,SEEK_CUR);
-                fprintf(fw,";\n");
-            }
-            break;
-        //     EXTVAR,              外部变量名
-        case EXTVAR:
-            fprintf(fw," %s,",T->data.data);
-            break;
-        //     FUNCDEF,             函数定义
-        case FUNCDEF:
-            formatTree(T->l,depth);
-            if(T->r)formatTree(T->r,depth);
-            else fprintf(fw,";\n");
-            break;
-
-        //     FUNCRETURNTYPE,      函数返回值类型
-        case FUNCRETURNTYPE:
-            fprintf(fw,"%s ",T->data.data);
-            break;
-//     FUNCNAME,            函数名
-        case FUNCNAME:
-            fprintf(fw,"%s",T->data.data);
-            fprintf(fw,"(");
-            if(T->l)formatTree(T->l,depth);
-            fprintf(fw,")");
-            if(T->r)formatTree(T->r,depth);
-            break;
-//     FUNCFORMALPARALIST,  函数形式参数序列
-        case FUNCFORMALPARALIST:
-            formatTree(T->l,depth);
-            if(T->r)formatTree(T->r,depth);
-            if(!T->r)fseek(fw,-1,SEEK_CUR);
-            break;
-//     FUNCFORMALPARADEF,   函数形式参数
-        case FUNCFORMALPARADEF:
-            formatTree(T->l,depth);
-            if(T->r)formatTree(T->r,depth);
-            break;
-//     FUNCFORMALPARATYPE,  函数形参类型
-        case FUNCFORMALPARATYPE:
-            fprintf(fw,"%s ",T->data.data);
-            break;
-//     FUNCFORMALPARA,      函数形参名
-        case FUNCFORMALPARA:
-            fprintf(fw,"%s,",T->data.data);
-            break;
-//     FUNCBODY,            函数体
-        case FUNCBODY:
-            fprintf(fw,"{\n");
-            if(T->l)formatTree(T->l,depth+1);
-            if(T->r)formatTree(T->r,depth+1);
-            fprintf(fw,"}\n");
-            break;
-//     LOCALVARDEFLIST,     局部变量定义序列
-        case LOCALVARDEFLIST:
-            formatTree(T->l,depth);
-            if(T->r)formatTree(T->r,depth);
-            break;
-//     LOCALVARDEF,         局部变量定义
-        case LOCALVARDEF:
-            TABs(depth);
-            formatTree(T->l,depth);
-            formatTree(T->r,depth);
-            break;
-//     LOCALVARTYPE,        局部变量类型
-        case LOCALVARTYPE:
-            fprintf(fw,"%s",T->data.data);
-            break;
-//     LOCALVARNAMELIST,    局部变量名序列
-        case LOCALVARNAMELIST:
-            formatTree(T->l,depth);
-            if(T->r)formatTree(T->r,depth);
-            else {
-                fseek(fw,-1,SEEK_CUR);
-                fprintf(fw,";\n");
-            }
-            break;
-//     LOCALVARNAME,        局部变量名
-        case LOCALVARNAME:
-            fprintf(fw," %s,",T->data.data);
-            break;
-//     STATELIST,           语句序列
-        case STATELIST:
-            formatTree(T->l,depth);
-            if(T->r){
-                formatTree(T->r,depth);
-            }
-            break;
-//     OPERAND,             操作数
-        case OPERAND:
-            fprintf(fw,"%s",T->data.data);
-            break;
-//     OPERATOR,            运算符
-        case OPERATOR:
-            if(T->l)formatTree(T->l,depth);
-            if(T->data.data)fprintf(fw," %s ",T->data.data);
-            if(T->r)formatTree(T->r,depth);
-            break;
-//     EXPRESSION,          表达式
-        case EXPRESSION:
-            TABs(depth);
-            if(T->l)formatTree(T->l,depth);
+            if (T->l)formatTree(T->l, depth);
+            if (T->r)formatTree(T->r, depth);
             fprintf(fw,";\n");
             break;
-//     IFPART,              if语句部分
+        // //外部变量类型
+        // EXTVARTYPE,
+        case EXTVARTYPE:
+            fprintf(fw, "%s ", T->data.data);
+            break;
+        // //外部变量名序列
+        // EXTVARLIST,
+        case EXTVARLIST:
+            if (T->l)formatTree(T->l, depth);
+            if (T->r){
+                fprintf(fw, ", ");
+                formatTree(T->r, depth);
+            }
+            break;
+        // //外部变量名
+        // EXTVAR,
+        case EXTVAR:
+            fprintf(fw, "%s", T->data.data);
+            break;
+        // //函数定义
+        // FUNCDEF,
+        case FUNCDEF:
+            if (T->l)formatTree(T->l, depth);
+            if (T->r)formatTree(T->r, depth);
+            break;
+        // //函数返回值类型
+        // FUNCRETURNTYPE,
+        case FUNCRETURNTYPE:
+            fprintf(fw, "%s ", T->data.data);
+            break;
+        // //函数名
+        // FUNCNAME,
+        case FUNCNAME:
+            fprintf(fw, "%s", T->data.data);
+            fprintf(fw, "(");
+            if (T->l) formatTree(T->l, depth);
+            fprintf(fw, ")\n");
+            if (T->r){
+                formatTree(T->r, depth);
+            } else{
+                fseek(fw, -1, SEEK_CUR);
+            }
+            break;
+        // //函数形式参数序列
+        // FUNCFORMALPARALIST,
+        case FUNCFORMALPARALIST:
+            if (T->l)formatTree(T->l, depth);
+            if (T->r){
+                fprintf(fw, ", ");
+                formatTree(T->r, depth);
+            }
+            break;
+        // //函数形式参数
+        // FUNCFORMALPARADEF,
+        case FUNCFORMALPARADEF:
+            if (T->l)formatTree(T->l, depth);
+            if (T->r)formatTree(T->r, depth);
+            break;
+        // //函数形参类型
+        // FUNCFORMALPARATYPE,
+        case FUNCFORMALPARATYPE:
+            fprintf(fw, "%s ", T->data.data);
+            break;
+        // //函数形参名
+        // FUNCFORMALPARA,
+        case FUNCFORMALPARA:
+            fprintf(fw, "%s", T->data.data);
+            break;
+        // //函数调用
+        // FUNCCALL,
+        case FUNCCALL:
+            if (T->l)formatTree(T->l, depth);
+            fseek(fw, -1, SEEK_CUR);
+            if (T->r)formatTree(T->r, depth);
+            fprintf(fw, ") ");
+            break;
+        // //实参序列
+        // ACTUALPARALIST,
+        case ACTUALPARALIST:
+            if (T->l)formatTree(T->l, depth);
+            if (T->r) {
+                fprintf(fw, ", ");
+                formatTree(T->r, depth);
+            }
+            break;
+        // //实参
+        // ACTUALPAR,
+        case ACTUALPAR:
+            fprintf(fw, "%s", T->data.data);
+            break;
+        // //复合语句
+        // COMPSTATE,
+        case COMPSTATE:
+            TABs(depth);
+            fprintf(fw, "{\n");
+            if(T->l)formatTree(T->l, depth+1);
+            if(T->r)formatTree(T->r, depth+1);
+            TABs(depth);
+            fprintf(fw, "}\n");
+            break;
+        // //局部变量定义序列
+        // LOCALVARDEFLIST,
+        case LOCALVARDEFLIST:
+            if (T->l)formatTree(T->l, depth);
+            if (T->r)formatTree(T->r, depth);
+            break;
+        // //局部变量定义
+        // LOCALVARDEF,
+        case LOCALVARDEF:
+            TABs(depth);
+            if (T->l)formatTree(T->l, depth);
+            if (T->r)formatTree(T->r, depth);
+            fprintf(fw, ";\n");
+            break;
+        // //局部变量类型
+        // LOCALVARTYPE,
+        case LOCALVARTYPE:
+            fprintf(fw, "%s ", T->data.data);
+            break;
+        // //局部变量名序列
+        // LOCALVARNAMELIST,
+        case LOCALVARNAMELIST:
+            if (T->l)formatTree(T->l, depth);
+            if (T->r){
+                fprintf(fw, ", ");
+                formatTree(T->r, depth);
+            }
+            break;
+        // //局部变量名
+        // LOCALVARNAME,
+        case LOCALVARNAME:
+            fprintf(fw, "%s", T->data.data);
+            break;
+        // //语句序列
+        // STATELIST,
+        case STATELIST:
+            if(T->l)formatTree(T->l, depth);
+            if(T->r)formatTree(T->r, depth);
+            break;
+        // //操作数
+        // OPERAND,
+        case OPERAND:
+            fprintf(fw, "%s ", T->data.data);
+            break;
+        // //运算符
+        // OPERATOR,
+        case OPERATOR:
+            if (T->l)formatTree(T->l, depth);
+            fprintf(fw, "%s ", T->data.data);
+            if (T->r)formatTree(T->r, depth);
+            break;
+        // //表达式
+        // EXPRESSION,
+        case EXPRESSION:
+            TABs(depth);
+            if (T->l)formatTree(T->l, depth);
+            if (T->r)formatTree(T->r, depth);
+            fseek(fw, -1, SEEK_CUR);
+            fprintf(fw, ";\n");
+            break;
+        // // if语句部分
+        // IFPART,
         case IFPART:
-            fprintf(fw,"if");
-            fprintf(fw,"(");
-            formatTree(T->l, 0);
-            fseek(fw,-3,SEEK_CUR);
-            fprintf(fw,"){\n");
-            formatTree(T->r,depth+1);
             TABs(depth);
-            fprintf(fw,"}\n");
+            fprintf(fw, "if (");
+            if(T->l)formatTree(T->l, 0);
+            fseek(fw, -2, SEEK_CUR);
+            fprintf(fw, ")\n");
+            tmp=depth;
+            if (T->r->type != COMPSTATE)tmp++;
+            formatTree(T->r, tmp);
             break;
-//     ELSEPART,            else部分
+        // // else部分
+        // ELSEPART,
         case ELSEPART:
-            fseek(fw,-2,SEEK_CUR);
-            fprintf(fw,"else{\n");
-            formatTree(T->l,depth+1);
             TABs(depth);
-            fprintf(fw,"}\n");
+            fprintf(fw, "else ");
+            tmp = T->r->type;
+            if (tmp != IFELSESTATEMENT && tmp != IFPART && tmp != IFSTATEMENT){
+                fprintf(fw, "\n");
+                formatTree(T->r, depth+1);
+            } else{
+                formatTree(T->r, 0);
+            }
             break;
-//     IFSTATEMENT,         if语句
+        // // if语句25
+        // IFSTATEMENT,
         case IFSTATEMENT:
-            TABs(depth);
-            formatTree(T->l, depth);
+            if (T->l)formatTree(T->l, depth);
             break;
-//     IFELSESTATEMENT,     if-else语句
+        // // if-else语句
+        // IFELSESTATEMENT,
         case IFELSESTATEMENT:
-            TABs(depth);
-            formatTree(T->l,depth);
-            formatTree(T->r,depth);
+            if (T->l)formatTree(T->l, depth);
+            if (T->r)formatTree(T->r, depth);
             break;
-//     WHILESTATEMENT,      // while语句
-//     WHILEPART,           // while条件语句
-//     WHILEBODY,           // while语句体
-//     FORSTATEMENT,        // for语句
-//     FORPART,             // for条件语句
-//     FORPART1,            // for语句一
-//     FORPART2,            // for语句二
-//     FORPART3,            // for语句三
-//     FORBODY,             // for语句体
-//     RETURNSTATEMENT,     // return语句
+        // // while语句结点
+        // WHILESTATEMENT,
+        case WHILESTATEMENT:
+            if (T->l)formatTree(T->l, depth);
+            if (T->r)formatTree(T->r, depth);
+            break;
+        // // while条件语句结点
+        // WHILEPART,
+        case WHILEPART:
+            TABs(depth);
+            fprintf(fw, "while (");
+            if (T->l) {
+                formatTree(T->l, 0);
+                fseek(fw, -2, SEEK_CUR);
+                fprintf(fw, ")\n");
+            }
+            break;
+        // // while语句体
+        // WHILEBODY, 未使用，由 复合语句 代替
+        // // for语句结点30
+        // FORSTATEMENT,
+        case FORSTATEMENT:
+            if (T->l)formatTree(T->l, depth);
+            if (T->r)formatTree(T->r, depth);
+            break;
+        // // for条件语句
+        // FORPART,
+        case FORPART:
+            TABs(depth);
+            fprintf(fw, "for (");
+            if (T->l)formatTree(T->l, depth);
+            break;
+        // // for语句一
+        // FORPART1,
+        case FORPART1:
+            if (T->l)formatTree(T->l, 0);
+            fseek(fw, -1, SEEK_CUR);
+            fprintf(fw, " ");
+            if (T->r)formatTree(T->r, 0);
+            break;
+        // // for语句二
+        // FORPART2,
+        case FORPART2:
+            if (T->l)formatTree(T->l, 0);
+            fseek(fw, -1, SEEK_CUR);
+            fprintf(fw, " ");
+            if (T->r)formatTree(T->r, 0);
+            fseek(fw, -2, SEEK_CUR);
+            fprintf(fw, ")\n");
+            break;
+        // // for语句三
+        // FORPART3,
+        case FORPART3:
+            if (T->l)formatTree(T->l, 0);
+            break;
+        // // for语句体
+        // FORBODY,
+        case FORBODY:
+            if (T->r)formatTree(T->r, depth);
+            break;
+        // // return语句
+        // RETURNSTATEMENT,
         case RETURNSTATEMENT:
             TABs(depth);
-            fprintf(fw,"return ");
-            if(T->r)formatTree(T->r,0);
+            fprintf(fw, "return ");
+            if (T->r)formatTree(T->r, 0);
             break;
-//     BREAKSTATEMENT,      // break语句
+        // // break语句
+        // BREAKSTATEMENT,
         case BREAKSTATEMENT:
             TABs(depth);
-            printf("break;\n");
+            fprintf(fw, "break;\n");
             break;
-//     DOWHILESTATEMENT,    // do-while循环语句
-//     DOWHILEBODY,         // do-while语句体
-//     DOWHILECONDITION,    // do-while条件
-//     CONTINUESTATEMENT,   // continue语句
+        // // do-while循环语句
+        // DOWHILESTATEMENT,
+        case DOWHILESTATEMENT:
+            TABs(depth);
+            fprintf(fw, "do\n");
+            if (T->l)formatTree(T->l, depth);
+            fseek(fw, -1, SEEK_CUR);
+            fprintf(fw, " while (");
+            if (T->r)formatTree(T->r, depth);
+            break;
+        // // do-while语句体
+        // DOWHILEBODY,
+        // // do-while条件
+        // DOWHILECONDITION,
+        case DOWHILECONDITION:
+            if (T->l)formatTree(T->l, 0);
+            fseek(fw, -2, SEEK_CUR);
+            fprintf(fw, ");\n");
+            break;
+        // // continue语句
+        // CONTINUESTATEMENT,
         case CONTINUESTATEMENT:
             TABs(depth);
-            printf("continue;\n");
+            fprintf(fw,"continue;\n");
             break;
-//     FUNCCLAIM,           //函数声明
-//     ARRAYDEF,            //数组定义
-//     ARRAYTYPE,           //数组类型
-//     ARRAYNAME,           //数组名45
-//     ARRAYSIZE            //数组大小
-        default:
+        // //函数声明
+        // FUNCCLAIM
+        case FUNCCLAIM:
+            if (T->l)formatTree(T->l, depth);
+            if (T->r)formatTree(T->r, depth);
+            fprintf(fw, ";\n");
             break;
     }
 }

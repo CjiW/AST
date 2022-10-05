@@ -1,8 +1,20 @@
-#include "token.h"
+#include "header.h"
 
-char token_text_[128]; //存放单词自身值
-int text_idx_ = 0;
 int row_ = 1;
+char token_text_[MAX_LEN];
+char Keywords[][20] =
+        {
+                "void", "char", "short", "int", "long", "float", "double",
+                "if", "else", "do", "while", "for", "break", "return", "continue"
+        };
+
+int iKeyword[] =
+        {
+                VOID, CHAR, SHORT, INT, LONG, FLOAT, DOUBLE,
+                IF, ELSE, DO, WHILE, FOR, BREAK, RETURN, CONTINUE
+        };
+
+int numKeyword = sizeof iKeyword / sizeof(int);
 
 int isSpace(char c) {
     return (c == ' ' || c == '\n' || c == '\t' || c == '\v' || c == '\f');
@@ -18,17 +30,22 @@ int isAlpha(char c) {
     return ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'));
 }
 
-int isLetterOrNum(char c) { return isAlpha(c) || isNum(c); }
+void Warning(char *s) {
+    printf("[line:%d]ERROR: %s\n", row_, s);
+}
 
-void clearToken(){
+int isLetterOrNumOr_(char c) { return isAlpha(c) || isNum(c) || c == '_'; }
+
+int text_idx_ = 0;
+
+void clearToken() {
     memset(token_text_, 0, sizeof token_text_);
     text_idx_ = 0;
 }
 
 int add2token(char c) {
-    /* max len : 128 */
-    if (text_idx_ >= 127) {
-        printf("Word Too Long!\n");
+    if (text_idx_ >= MAX_LEN - 1) {
+        Warning("Word Too Long!");
         return -1; //添加失败
     }
     *(token_text_ + text_idx_) = c;
@@ -52,28 +69,13 @@ int getToken(FILE *fp) {
     if (isAlpha(c) || c == '_') {
         do {
             add2token(c);
-        } while (c = fgetc(fp), isLetterOrNum(c)||c == '_');
+        } while (c = fgetc(fp), isLetterOrNumOr_(c));
         ungetc(c, fp);
-        if (strcmp(token_text_, "int") == 0) { return INT; }
-        if (strcmp(token_text_, "double") == 0) { return DOUBLE; }
-        if (strcmp(token_text_, "char") == 0) { return CHAR; }
-        if (strcmp(token_text_, "short") == 0) { return SHORT; }
-        if (strcmp(token_text_, "long") == 0) { return LONG; }
-        if (strcmp(token_text_, "float") == 0) { return FLOAT; }
-        /* is keyword */
-        if (strcmp(token_text_, "if") == 0) { return IF; }
-        if (strcmp(token_text_, "else") == 0) { return ELSE; }
-        if (strcmp(token_text_, "do") == 0) { return DO; }
-        if (strcmp(token_text_, "while") == 0) { return WHILE; }
-        if (strcmp(token_text_, "for") == 0) { return FOR; }
-        if (strcmp(token_text_, "struct") == 0) { return STRUCT; }
-        if (strcmp(token_text_, "break") == 0) { return BREAK; }
-        if (strcmp(token_text_, "switch") == 0) { return SWITCH; }
-        if (strcmp(token_text_, "case") == 0) { return CASE; }
-        if (strcmp(token_text_, "typedef") == 0) { return TYPEDEF; }
-        if (strcmp(token_text_, "return") == 0) { return RETURN; }
-        if (strcmp(token_text_, "continue") == 0) { return CONTINUE; }
-        if (strcmp(token_text_, "void") == 0) { return VOID; }
+        for (int i = 0; i < numKeyword; i++) {
+            if (strcmp(token_text_, Keywords[i]) == 0) {
+                return iKeyword[i];
+            }
+        }
         c = fgetc(fp);
 
         if (c == '[') {
@@ -109,7 +111,8 @@ int getToken(FILE *fp) {
                     add2token(c);
                     return LONG_CONST;
                 }
-                if ((!isSpace(c)) && c != ';' && c != ')' && c != '+' && c != '-' && c != '*' && c != '/' && c != '|' && c != '&') {
+                if ((!isSpace(c)) && c != ';' && c != ')' && c != '+' && c != '-' && c != '*' && c != '/' && c != '|' &&
+                    c != '&') {
                     return ERROR_TOKEN;
                 }
                 ungetc(c, fp);
@@ -119,7 +122,7 @@ int getToken(FILE *fp) {
             if (isNum(c) && c <= '7') {
                 do {
                     add2token(c);
-                } while (c = fgetc(fp), isNum(c)&& c <= '7');
+                } while (c = fgetc(fp), isNum(c) && c <= '7');
                 if (c == 'L' || c == 'l') {
                     add2token(c);
                     return LONG_CONST;
@@ -131,13 +134,14 @@ int getToken(FILE *fp) {
                 return INT_CONST;
             }
             ungetc(c, fp);
-            c='0';
+            c = '0';
             clearToken();
         }
         do {
             add2token(c);
         } while (c = fgetc(fp), isNum(c));
-        if (isSpace(c) || c == ';' || c == ')' || c == '+' || c == '-' || c == '*' || c == '/' || c == '|' || c == '&'){
+        if (isSpace(c) || c == ';' || c == ')' || c == '+' || c == '-' || c == '*' || c == '/' || c == '|' ||
+            c == '&') {
             ungetc(c, fp);
             return INT_CONST;
         }
@@ -153,13 +157,14 @@ int getToken(FILE *fp) {
                 add2token(c);
                 return DOUBLE_CONST;
             }
-            if (isSpace(c) || c == ';' || c == ')' || c == '+' || c == '-' || c == '*' || c == '/' || c == '|' || c == '&'){
+            if (isSpace(c) || c == ';' || c == ')' || c == '+' || c == '-' || c == '*' || c == '/' || c == '|' ||
+                c == '&') {
                 ungetc(c, fp);
                 return DOUBLE_CONST;
             }
             return ERROR_TOKEN;
         }
-        if (c == 'L' || c == 'l'){ // l
+        if (c == 'L' || c == 'l') { // l
             add2token(c);
             return LONG_CONST;
         }
@@ -306,14 +311,14 @@ int getToken(FILE *fp) {
                     // include
                     do {
                         add2token(c);
-                    } while (c = fgetc(fp),c != '\n');
+                    } while (c = fgetc(fp), c != '\n');
                     row_++;
                     return INCLUDE;
                 } else if (strcmp(token_text_, "#define") == 0) {
                     // define
                     do {
                         add2token(c);
-                    } while (c= fgetc(fp), c!='\n');
+                    } while (c = fgetc(fp), c != '\n');
                     row_++;
                     return DEFINE;
                 } else {
@@ -394,14 +399,14 @@ int getToken(FILE *fp) {
             }
         case '&':
             add2token(c);
-            if ((c= fgetc(fp) == '&')){
+            if ((c = fgetc(fp)) == '&') {
                 add2token(c);
                 return AND;
             }
             return ERROR_TOKEN;
         case '|':
             add2token(c);
-            if ((c= fgetc(fp) == '|')){
+            if ((c=fgetc(fp)) == '|') {
                 add2token(c);
                 return OR;
             }
@@ -412,3 +417,4 @@ int getToken(FILE *fp) {
             return ERROR_TOKEN;
     }
 }
+

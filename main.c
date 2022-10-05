@@ -1,13 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include "token.h"
-#include "lex.h"
-#include "parser.h"
-#include "format.h"
-char fileIn[128],fileOut[128];
-FILE *fr,*fw;
+#include "header.h"
+
 int main(void) {
     int option;
+    char tmps[400];
     while (1) {
         system("clear");
         // system("cls");
@@ -22,7 +17,7 @@ int main(void) {
         switch (option) {
             case 1:
                 printf("请输入源文件路径:\n");
-                scanf("%s",fileIn);
+                scanf("%s", fileIn);
                 fr = fopen(fileIn, "r");
                 if (fr == NULL) {
                     printf("ERR\n");
@@ -35,7 +30,7 @@ int main(void) {
                 break;
             case 2:
                 printf("请输入源文件路径:\n");
-                scanf("%s",fileIn);
+                scanf("%s", fileIn);
                 fr = fopen(fileIn, "r");
                 syntaxAnalyse();
                 printf("Press any key to continue\n");
@@ -45,15 +40,17 @@ int main(void) {
                 break;
             case 3:
                 printf("请输入源文件路径:\n");
-                scanf("%s",fileIn);
+                scanf("%s", fileIn);
                 fr = fopen(fileIn, "r");
                 printf("请输入目标文件路径:\n");
-                scanf("%s",fileOut);
+                scanf("%s", fileOut);
                 fw = fopen(fileOut, "w");
                 formatCode();
                 printf("Press any key to continue\n");
                 fclose(fr);
                 fclose(fw);
+                sprintf(tmps, "code -d %s %s", fileIn, fileOut);
+                system(tmps);
                 getchar();
                 getchar();
                 break;
