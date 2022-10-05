@@ -1,6 +1,6 @@
 #include "header.h"
 void formatCode() {
-    init();
+    clear_arr();
     ASTTree *root = program();
     if (haveMistake == 1) {
         printf("Syntax Error!\n");

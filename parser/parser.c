@@ -14,7 +14,7 @@ ASTTree *newNode(int node_type) {
     node->type = node_type;
     return node;
 }
-void init(){
+void clear_arr(){
     for (int i = 0; i < 128; i++) {
         notes[i].data[0] = '\0';
         notes[i].row = 0;
@@ -23,10 +23,9 @@ void init(){
     }
     include_num = 0;
     define_num = 0;
-    
 }
 void syntaxAnalyse() {
-    init();
+    clear_arr();
     ASTTree *root = program();
     if (haveMistake == 1) {
         Warning("Syntax Error!");

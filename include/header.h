@@ -292,6 +292,8 @@ typedef enum DataType {
     FUNCCLAIM
 } DataType;
 
+void clear_arr();
+
 void syntaxAnalyse();
 
 void freeTree(ASTTree *root);
