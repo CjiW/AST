@@ -3,19 +3,23 @@
 int w, type;
 int haveMistake;
 int isVoid, hasReturn, isInRecycle = 0;
-int note_num=0, include_num=0, define_num=0;
+int note_num = 0, include_num = 0, define_num = 0;
 Note notes[128];
 char include[128][128];
 char define[128][128];
+char line[1024] = {0};
 
-ASTTree *newNode(int node_type) {
-    ASTTree *node = (ASTTree *) malloc(sizeof(ASTTree));
+ASTTree *newNode(int node_type)
+{
+    ASTTree *node = (ASTTree *)malloc(sizeof(ASTTree));
     memset(node, 0, sizeof(ASTTree));
     node->type = node_type;
     return node;
 }
-void clear_arr(){
-    for (int i = 0; i < 128; i++) {
+void clear_arr()
+{
+    for (int i = 0; i < 128; i++)
+    {
         notes[i].data[0] = '\0';
         notes[i].row = 0;
         include[i][0] = '\0';
@@ -24,30 +28,39 @@ void clear_arr(){
     include_num = 0;
     define_num = 0;
 }
-void syntaxAnalyse() {
+void syntaxAnalyse()
+{
     clear_arr();
     ASTTree *root = program();
-    if (haveMistake == 1) {
+    if (haveMistake == 1)
+    {
         Warning("Syntax Error!");
-    } else {
-        preorderTranverse(root, 0);
+    }
+    else
+    {
+        preorderTranverse(root, -1, 1);
         printf("Included files:\n");
-        for (int i = 0; i < include_num; i++) {
+        for (int i = 0; i < include_num; i++)
+        {
             printf("    %s\n", include[i]);
         }
         printf("Defined macros:\n");
-        for (int i = 0; i < define_num; i++) {
+        for (int i = 0; i < define_num; i++)
+        {
             printf("    %s\n", define[i]);
         }
         printf("Notes:\n");
-        for (int i = 0; i < note_num; i++) {
+        for (int i = 0; i < note_num; i++)
+        {
             printf("    [%d] %s\n", notes[i].row, notes[i].data);
         }
     }
 }
 
-void freeTree(ASTTree *root) {
-    if (root) {
+void freeTree(ASTTree *root)
+{
+    if (root)
+    {
         freeTree(root->l);
         freeTree(root->r);
         free(root);
@@ -55,25 +68,29 @@ void freeTree(ASTTree *root) {
 }
 
 // store notes, include and define
-void ignore(int *w){
-    while (*w == ANNO || *w == INCLUDE || *w == DEFINE) {
-        switch (*w) {
-            case ANNO:
-                strcpy(notes[note_num++].data, token_text_);
-                notes->row = row_;
-                break;
-            case INCLUDE:
-                strcpy(include[include_num++], token_text_);
-                break;
-            case DEFINE:
-                strcpy(define[define_num++], token_text_);
-                break;
+void ignore(int *w)
+{
+    while (*w == ANNO || *w == INCLUDE || *w == DEFINE)
+    {
+        switch (*w)
+        {
+        case ANNO:
+            strcpy(notes[note_num++].data, token_text_);
+            notes->row = row_;
+            break;
+        case INCLUDE:
+            strcpy(include[include_num++], token_text_);
+            break;
+        case DEFINE:
+            strcpy(define[define_num++], token_text_);
+            break;
         }
         *w = getToken(fr);
     }
 }
 
-ASTTree *program() {
+ASTTree *program()
+{
     row_ = 1;
     haveMistake = 0;
     tableInit();
@@ -81,11 +98,14 @@ ASTTree *program() {
     w = getToken(fr);
     ignore(&w);
     ASTTree *p = ExtDefList();
-    if (haveMistake == 1) {
+    if (haveMistake == 1)
+    {
         return NULL;
     }
-    if (p != NULL) {
-        if (isVoid == 0 && hasReturn == 0) {
+    if (p != NULL)
+    {
+        if (isVoid == 0 && hasReturn == 0)
+        {
             Warning("Missing return value");
             haveMistake = 1;
             return NULL;
@@ -93,28 +113,36 @@ ASTTree *program() {
         ASTTree *root = p;
         root->type = EXTDEFLIST;
         return root;
-    } else {
+    }
+    else
+    {
         haveMistake = 1;
         return NULL;
     }
 }
 
-ASTTree *ExtDefList() {
-    if (w == -1) {
+ASTTree *ExtDefList()
+{
+    if (w == -1)
+    {
         return NULL;
     }
     ASTTree *root = newNode(EXTDEFLIST);
     root->l = ExtDef();
-    if (haveMistake == 1)return NULL;
+    if (haveMistake == 1)
+        return NULL;
     w = getToken(fr);
     ignore(&w);
     root->r = ExtDefList();
-    if (haveMistake == 1)return NULL;
+    if (haveMistake == 1)
+        return NULL;
     return root;
 }
 
-ASTTree *ExtDef() {
-    if (w != INT && w != DOUBLE && w != CHAR && w != LONG && w != SHORT && w != FLOAT && w != VOID) {
+ASTTree *ExtDef()
+{
+    if (w != INT && w != DOUBLE && w != CHAR && w != LONG && w != SHORT && w != FLOAT && w != VOID)
+    {
         Warning("Expected: type");
         haveMistake = 1;
         return NULL;
@@ -122,7 +150,8 @@ ASTTree *ExtDef() {
     type = w;
     w = getToken(fr);
     ignore(&w);
-    if (w != IDENT && w != ARRAY) {
+    if (w != IDENT && w != ARRAY)
+    {
         Warning("Expected: ident(var Or func)");
         haveMistake = 1;
         return NULL;
@@ -133,33 +162,42 @@ ASTTree *ExtDef() {
     w = getToken(fr);
     ignore(&w);
     strcpy(token_text_, token_text0);
-    if (w == LP) {
+    if (w == LP)
+    {
         p = FuncDef();
-        if (haveMistake == 1) {
+        if (haveMistake == 1)
+        {
             return NULL;
         }
-    } else {
+    }
+    else
+    {
         p = ExtVarDef();
-        if (haveMistake == 1) {
+        if (haveMistake == 1)
+        {
             return NULL;
         }
     }
     return p;
 }
 
-ASTTree *ExtVarDef() {
-    if (haveMistake == 1) {
+ASTTree *ExtVarDef()
+{
+    if (haveMistake == 1)
+    {
         return NULL;
     }
     int cnt;
-    if (type == VOID) {
+    if (type == VOID)
+    {
         Warning("Can't declare a void type var");
         haveMistake = 1;
         return NULL;
     }
 
     haveMistake = insertIdent(token_text_, VAR);
-    if (haveMistake == 1) {
+    if (haveMistake == 1)
+    {
         return NULL;
     }
 
@@ -168,25 +206,26 @@ ASTTree *ExtVarDef() {
     ASTTree *p = newNode(EXTVARTYPE);
     p->data.type = type;
 
-    switch (type) {
-        case INT:
-            p->data.data = "int";
-            break;
-        case DOUBLE:
-            p->data.data = "double";
-            break;
-        case CHAR:
-            p->data.data = "char";
-            break;
-        case FLOAT:
-            p->data.data = "float";
-            break;
-        case LONG:
-            p->data.data = "long";
-            break;
-        case SHORT:
-            p->data.data = "short";
-            break;
+    switch (type)
+    {
+    case INT:
+        p->data.data = "int";
+        break;
+    case DOUBLE:
+        p->data.data = "double";
+        break;
+    case CHAR:
+        p->data.data = "char";
+        break;
+    case FLOAT:
+        p->data.data = "float";
+        break;
+    case LONG:
+        p->data.data = "long";
+        break;
+    case SHORT:
+        p->data.data = "short";
+        break;
     }
 
     root->l = p;
@@ -194,31 +233,37 @@ ASTTree *ExtVarDef() {
     root->r = p;
 
     p->l = newNode(EXTVAR);
-    char *token_text1 = (char *) malloc(MAX_LEN * sizeof(char));  //@
+    char *token_text1 = (char *)malloc(MAX_LEN * sizeof(char)); //@
     strcpy(token_text1, token_text_);
     p->l->data.data = token_text1;
 
-    while (1) {
-        if (w != COMMA && w != SEMI) {
-            if (row_ > cnt) {
+    while (1)
+    {
+        if (w != COMMA && w != SEMI)
+        {
+            if (row_ > cnt)
+            {
                 row_--;
             }
             Warning("Expected: ',' or ';'");
             haveMistake = 1;
             return NULL;
         }
-        if (w == SEMI) {
+        if (w == SEMI)
+        {
             return root;
         }
         w = getToken(fr);
-        if (w != IDENT && w != ARRAY) {
+        if (w != IDENT && w != ARRAY)
+        {
             Warning("Expected: ident");
             haveMistake = 1;
             return NULL;
         }
 
         haveMistake = insertIdent(token_text_, VAR);
-        if (haveMistake == 1) {
+        if (haveMistake == 1)
+        {
             return NULL;
         }
 
@@ -227,7 +272,7 @@ ASTTree *ExtVarDef() {
         p = q;
 
         p->l = newNode(EXTVAR);
-        token_text1 = (char *) malloc(MAX_LEN * sizeof(char));
+        token_text1 = (char *)malloc(MAX_LEN * sizeof(char));
         strcpy(token_text1, token_text_);
         p->l->data.data = token_text1;
         cnt = row_;
@@ -237,8 +282,10 @@ ASTTree *ExtVarDef() {
     }
 }
 
-ASTTree *FuncDef() {
-    if (haveMistake == 1) {
+ASTTree *FuncDef()
+{
+    if (haveMistake == 1)
+    {
         return NULL;
     }
     ASTTree *root = newNode(FUNCDEF);
@@ -246,39 +293,41 @@ ASTTree *FuncDef() {
     p->data.type = type;
 
     haveMistake = insertIdent(token_text_, FUNC);
-    if (haveMistake == 1) {
+    if (haveMistake == 1)
+    {
         return NULL;
     }
 
-    switch (type) {
-        case INT:
-            p->data.data = "int";
-            isVoid = 0;
-            break;
-        case DOUBLE:
-            p->data.data = "double";
-            isVoid = 0;
-            break;
-        case CHAR:
-            p->data.data = "char";
-            isVoid = 0;
-            break;
-        case FLOAT:
-            p->data.data = "float";
-            isVoid = 0;
-            break;
-        case LONG:
-            p->data.data = "long";
-            isVoid = 0;
-            break;
-        case SHORT:
-            p->data.data = "short";
-            isVoid = 0;
-            break;
-        case VOID:
-            p->data.data = "void";
-            isVoid = 1;
-            break;
+    switch (type)
+    {
+    case INT:
+        p->data.data = "int";
+        isVoid = 0;
+        break;
+    case DOUBLE:
+        p->data.data = "double";
+        isVoid = 0;
+        break;
+    case CHAR:
+        p->data.data = "char";
+        isVoid = 0;
+        break;
+    case FLOAT:
+        p->data.data = "float";
+        isVoid = 0;
+        break;
+    case LONG:
+        p->data.data = "long";
+        isVoid = 0;
+        break;
+    case SHORT:
+        p->data.data = "short";
+        isVoid = 0;
+        break;
+    case VOID:
+        p->data.data = "void";
+        isVoid = 1;
+        break;
     }
     p->l = NULL;
     p->r = NULL;
@@ -286,28 +335,35 @@ ASTTree *FuncDef() {
 
     // param
     ASTTree *q = newNode(FUNCNAME);
-    char *token_text1 = (char *) malloc(MAX_LEN * sizeof(char));
+    char *token_text1 = (char *)malloc(MAX_LEN * sizeof(char));
     strcpy(token_text1, token_text_);
     q->data.data = token_text1;
 
     root->r = q;
     level++;
     q->l = FormParaList();
-    if (haveMistake == 1)return NULL;
+    if (haveMistake == 1)
+        return NULL;
     w = getToken(fr);
     ignore(&w);
-    if (w == SEMI) {
+    if (w == SEMI)
+    {
         // prototype declare
         root->r->r = NULL;
         root->type = FUNCCLAIM;
         removeIdent();
         level--;
-    } else if (w == LB) {
+    }
+    else if (w == LB)
+    {
         q->r = CompState();
-        if (haveMistake == 1)return NULL;
+        if (haveMistake == 1)
+            return NULL;
         removeIdent();
         level--;
-    } else {
+    }
+    else
+    {
         Warning("Expected: ';' or '{'");
         haveMistake = 1;
         return NULL;
@@ -315,33 +371,42 @@ ASTTree *FuncDef() {
     return root;
 }
 
-ASTTree *FormParaList() {
-    if (haveMistake == 1) {
+ASTTree *FormParaList()
+{
+    if (haveMistake == 1)
+    {
         return NULL;
     }
     w = getToken(fr);
     ignore(&w);
-    if (w == RP) {
+    if (w == RP)
+    {
         return NULL;
     }
-    if (w == COMMA) {
+    if (w == COMMA)
+    {
         w = getToken(fr);
         ignore(&w);
     }
     ASTTree *root = newNode(FUNCFORMALPARALIST);
     root->l = FormParaDef();
-    if (haveMistake == 1)return NULL;
+    if (haveMistake == 1)
+        return NULL;
     root->r = FormParaList();
-    if (haveMistake == 1)return NULL;
+    if (haveMistake == 1)
+        return NULL;
     return root;
 }
 
-ASTTree *FormParaDef() {
-    if (haveMistake == 1) {
+ASTTree *FormParaDef()
+{
+    if (haveMistake == 1)
+    {
         return NULL;
     }
     if (w != INT && w != DOUBLE && w != CHAR && w != LONG && w != SHORT &&
-        w != FLOAT) {
+        w != FLOAT)
+    {
         Warning("Expected: parameter's type");
         haveMistake = 1;
         return NULL;
@@ -349,7 +414,8 @@ ASTTree *FormParaDef() {
     type = w;
     w = getToken(fr);
     ignore(&w);
-    if (w != IDENT) {
+    if (w != IDENT)
+    {
         Warning("Expected: parameter's name");
         haveMistake = 1;
         return NULL;
@@ -357,61 +423,72 @@ ASTTree *FormParaDef() {
     ASTTree *root = newNode(FUNCFORMALPARADEF);
     ASTTree *p = newNode(FUNCFORMALPARATYPE);
     p->data.type = type;
-    switch (type) {
-        case INT:
-            p->data.data = "int";
-            break;
-        case DOUBLE:
-            p->data.data = "double";
-            break;
-        case CHAR:
-            p->data.data = "char";
-            break;
-        case FLOAT:
-            p->data.data = "float";
-            break;
-        case LONG:
-            p->data.data = "long";
-            break;
-        case SHORT:
-            p->data.data = "short";
-            break;
-        case VOID:
-            p->data.data = "void";
-            break;
+    switch (type)
+    {
+    case INT:
+        p->data.data = "int";
+        break;
+    case DOUBLE:
+        p->data.data = "double";
+        break;
+    case CHAR:
+        p->data.data = "char";
+        break;
+    case FLOAT:
+        p->data.data = "float";
+        break;
+    case LONG:
+        p->data.data = "long";
+        break;
+    case SHORT:
+        p->data.data = "short";
+        break;
+    case VOID:
+        p->data.data = "void";
+        break;
     }
     p->l = p->r = NULL;
     root->l = p;
     p = newNode(FUNCFORMALPARA);
 
     haveMistake = insertIdent(token_text_, VAR);
-    if (haveMistake == 1) {
+    if (haveMistake == 1)
+    {
         return NULL;
     }
 
-    char *token_text1 = (char *) malloc(MAX_LEN * sizeof(char));
+    char *token_text1 = (char *)malloc(MAX_LEN * sizeof(char));
     strcpy(token_text1, token_text_);
     p->data.data = token_text1;
     root->r = p;
     return root;
 }
 
-ASTTree *CompState() {
+ASTTree *CompState()
+{
     ASTTree *root = newNode(COMPSTATE);
     w = getToken(fr);
     ignore(&w);
     if (w == INT || w == DOUBLE || w == CHAR || w == LONG || w == SHORT ||
-        w == FLOAT) {
+        w == FLOAT)
+    {
         root->l = LocalVarDefList();
-        if (haveMistake == 1)return NULL;
-    } else {
+        if (haveMistake == 1)
+            return NULL;
+    }
+    else
+    {
         root->l = NULL;
     }
     root->r = StateList();
-    if (haveMistake == 1)return NULL;
-    if (w == RB) {
+    if (haveMistake == 1)
+        return NULL;
+    if (w == RB)
+    {
         return root;
-    } else {
+    }
+    else
+    {
         Warning("Excepted: '}'");
         haveMistake = 1;
         freeTree(root);
@@ -419,8 +496,10 @@ ASTTree *CompState() {
     }
 }
 
-ASTTree *LocalVarDefList() {
-    if (haveMistake == 1) {
+ASTTree *LocalVarDefList()
+{
+    if (haveMistake == 1)
+    {
         return NULL;
     }
 
@@ -428,7 +507,7 @@ ASTTree *LocalVarDefList() {
     ASTTree *p = newNode(LOCALVARDEF);
     root->l = p;
     p->l = newNode(LOCALVARTYPE);
-    char *tmp_text = (char *) malloc(MAX_LEN * sizeof(char));
+    char *tmp_text = (char *)malloc(MAX_LEN * sizeof(char));
     strcpy(tmp_text, token_text_);
     p->l->data.data = tmp_text;
 
@@ -438,39 +517,47 @@ ASTTree *LocalVarDefList() {
 
     p->r = q;
     q->l = newNode(LOCALVARNAME);
-    char *token_text2 = (char *) malloc(MAX_LEN * sizeof(char));
+    char *token_text2 = (char *)malloc(MAX_LEN * sizeof(char));
     strcpy(token_text2, token_text_);
     q->l->data.data = token_text2;
 
     haveMistake = insertIdent(token_text_, VAR);
-    if (haveMistake == 1) {
+    if (haveMistake == 1)
+    {
         return NULL;
     }
 
-    while (1) {
+    while (1)
+    {
         w = getToken(fr);
         ignore(&w);
-        if (w == SEMI) {
+        if (w == SEMI)
+        {
             q->r = NULL;
             w = getToken(fr);
             ignore(&w);
             break;
-        } else if (w == COMMA) {
+        }
+        else if (w == COMMA)
+        {
             w = getToken(fr);
             ignore(&w);
             ASTTree *s = newNode(LOCALVARNAMELIST);
             q->r = s;
             q = q->r;
             q->l = newNode(LOCALVARNAME);
-            tmp_text = (char *) malloc(MAX_LEN * sizeof(char));
+            tmp_text = (char *)malloc(MAX_LEN * sizeof(char));
             strcpy(tmp_text, token_text_);
             q->l->data.data = tmp_text;
             haveMistake = insertIdent(token_text_, VAR);
-            if (haveMistake == 1) {
+            if (haveMistake == 1)
+            {
                 freeTree(root);
                 return NULL;
             }
-        } else {
+        }
+        else
+        {
             Warning("Excepted: ',' or ';'");
             haveMistake = 1;
             return NULL;
@@ -478,318 +565,391 @@ ASTTree *LocalVarDefList() {
     }
 
     if (w == INT || w == DOUBLE || w == CHAR || w == LONG || w == SHORT ||
-        w == FLOAT) {
+        w == FLOAT)
+    {
         root->r = LocalVarDefList();
-        if (haveMistake == 1) {
+        if (haveMistake == 1)
+        {
             return NULL;
         }
-    } else {
+    }
+    else
+    {
         root->r = NULL;
     }
     root->r = NULL;
     return root;
 }
 
-ASTTree *StateList() {
-    if (haveMistake == 1) {
+ASTTree *StateList()
+{
+    if (haveMistake == 1)
+    {
         return NULL;
     }
     ASTTree *root = NULL;
     ASTTree *r1 = Statement();
-    if (haveMistake == 1)return NULL;
-    if (r1 == NULL) {
+    if (haveMistake == 1)
         return NULL;
-    } else {
+    if (r1 == NULL)
+    {
+        return NULL;
+    }
+    else
+    {
         root = newNode(STATELIST);
         root->l = r1;
         w = getToken(fr);
         ignore(&w);
-        if (w != RB) {
+        if (w != RB)
+        {
             root->r = StateList();
-            if (haveMistake == 1)return NULL;
+            if (haveMistake == 1)
+                return NULL;
             return root;
-        } else {
+        }
+        else
+        {
             return root;
         }
     }
 }
 
-ASTTree *Statement() {
-    if (haveMistake == 1) {
+ASTTree *Statement()
+{
+    if (haveMistake == 1)
+    {
         return NULL;
     }
     ASTTree *root = newNode(0);
-    switch (w) {
-        case IF: {
-            w = getToken(fr);
-            ignore(&w);
-            if (w != LP) {
-                Warning("Excepted: '('");
-                haveMistake = 1;
-                return NULL;
-            }
-
-            w = getToken(fr);
-            ignore(&w);
-            ASTTree *p1 = newNode(IFPART);
-            p1->l = Expression(RP);
-            if (haveMistake == 1)return NULL;
-            if (p1->l == NULL) {
-                Warning("in the condition of If-Statement");
-                haveMistake = 1;
-                return NULL;
-            }
-            w = getToken(fr);
-            ignore(&w);
-            level++;
-            if (w == LB) {
-                p1->r = CompState();
-                if (haveMistake == 1)return NULL;
-            } else {
-                p1->r = Statement();
-                if (haveMistake == 1)return NULL;
-                p1->r->r = NULL;
-            }
-            removeIdent();
-            level--;
-            root->l = p1;
-            w = getToken(fr);
-            ignore(&w);
-            if (w == ELSE) {
-                root->type = IFELSESTATEMENT;
-                ASTTree *p2 = newNode(ELSEPART);
-                root->r = p2;
-                w = getToken(fr);
-                ignore(&w);
-                level++;
-                if (w == LB) {
-                    p2->r = CompState();
-                    if (haveMistake == 1)return NULL;
-                } else {
-                    p2->r = Statement();
-                    if (haveMistake == 1)return NULL;
-                    p2->r->r = NULL;
-                }
-                removeIdent();
-                level--;
-            } else {
-                root->type = IFSTATEMENT;
-                returnToken(fr);
-            }
-            return root;
+    switch (w)
+    {
+    case IF:
+    {
+        w = getToken(fr);
+        ignore(&w);
+        if (w != LP)
+        {
+            Warning("Excepted: '('");
+            haveMistake = 1;
+            return NULL;
         }
-        case WHILE: {
-            isInRecycle++;
-            w = getToken(fr);
-            ignore(&w);
-            if (w != LP) {
-                Warning("Error in WHILE");
-                haveMistake = 1;
-                return NULL;
-            }
 
-            w = getToken(fr);
-            ignore(&w);
-            ASTTree *p1 = newNode(WHILEPART);
-            p1->l = Expression(RP);
-            if (haveMistake == 1)return NULL;
-            if (p1->l == NULL) {
-                Warning("whileStatementCondition部分出错");
-                haveMistake = 1;
+        w = getToken(fr);
+        ignore(&w);
+        ASTTree *p1 = newNode(IFPART);
+        p1->l = Expression(RP);
+        if (haveMistake == 1)
+            return NULL;
+        if (p1->l == NULL)
+        {
+            Warning("in the condition of If-Statement");
+            haveMistake = 1;
+            return NULL;
+        }
+        w = getToken(fr);
+        ignore(&w);
+        level++;
+        if (w == LB)
+        {
+            p1->r = CompState();
+            if (haveMistake == 1)
                 return NULL;
-            }
-            ASTTree *p2;
-            w = getToken(fr);
-            ignore(&w);
-            level++;
-            if (w == LB) {
-                p2 = CompState();
-            } else {
-                p2 = Statement();
-            }
-            removeIdent();
-            level--;
-            root->type = WHILESTATEMENT;
-            root->l = p1;
+        }
+        else
+        {
+            p1->r = Statement();
+            if (haveMistake == 1)
+                return NULL;
+            p1->r->r = NULL;
+        }
+        removeIdent();
+        level--;
+        root->l = p1;
+        w = getToken(fr);
+        ignore(&w);
+        if (w == ELSE)
+        {
+            root->type = IFELSESTATEMENT;
+            ASTTree *p2 = newNode(ELSEPART);
             root->r = p2;
-            isInRecycle--;
-            return root;
-        }
-        case FOR: {
-            isInRecycle++;
-            w = getToken(fr);
-            ignore(&w);
-            if (w != LP) {
-                Warning("Error in FOR");
-                haveMistake = 1;
-                return NULL;
-            }
-            w = getToken(fr);
-            ignore(&w);
-            ASTTree *p1 = newNode(FORPART);
-            ASTTree *q = newNode(FORPART1);  // FOR part 1
-            p1->l = q;
-            q->l = Expression(SEMI);
-            if (haveMistake == 1)return NULL;
-            if (q->l == NULL) {
-                q->data.data = "None";
-            }
-            w = getToken(fr);
-            ignore(&w);
-            q->r = newNode(FORPART2);  // FOR part 2
-            q = q->r;
-            q->l = Expression(SEMI);
-            if (haveMistake == 1)return NULL;
-            if (q->l == NULL) {
-                q->data.data = "None";
-            }
-            w = getToken(fr);
-            ignore(&w);
-            q->r = newNode(FORPART3);  // FOR part 3
-            q = q->r;
-            q->l = Expression(RP);
-            if (haveMistake == 1)return NULL;
-            if (q->l == NULL) {
-                q->data.data = "None";
-            }
-
-            ASTTree *p2 = newNode(FORBODY);  // FOR body
             w = getToken(fr);
             ignore(&w);
             level++;
-            if (w == LB) {
+            if (w == LB)
+            {
                 p2->r = CompState();
-                if (haveMistake == 1)return NULL;
-            } else {
+                if (haveMistake == 1)
+                    return NULL;
+            }
+            else
+            {
                 p2->r = Statement();
-                if (haveMistake == 1)return NULL;
+                if (haveMistake == 1)
+                    return NULL;
                 p2->r->r = NULL;
             }
             removeIdent();
             level--;
-            root->type = FORSTATEMENT;
-            root->l = p1;
-            root->r = p2;
-            isInRecycle--;
-            return root;
         }
-        case RETURN: {
-            hasReturn = 1;
-            if (isVoid == 1) {
-                Warning("There should be no return statement\n");
-                haveMistake = 1;
-                return NULL;
-            }
-            root->type = RETURNSTATEMENT;
-            w = getToken(fr);
-            ignore(&w);
-            root->r = Expression(SEMI);
-            if (haveMistake == 1)return NULL;
-            return root;
+        else
+        {
+            root->type = IFSTATEMENT;
+            returnToken(fr);
         }
-        case DO: {
-            isInRecycle++;
-            w = getToken(fr);
-            ignore(&w);
-            if (w != LB) {
-                Warning("missing bracket in do-while\n");
-                haveMistake = 1;
-                return NULL;
-            }
+        return root;
+    }
+    case WHILE:
+    {
+        isInRecycle++;
+        w = getToken(fr);
+        ignore(&w);
+        if (w != LP)
+        {
+            Warning("Error in WHILE");
+            haveMistake = 1;
+            return NULL;
+        }
 
-            ASTTree *p1;
+        w = getToken(fr);
+        ignore(&w);
+        ASTTree *p1 = newNode(WHILEPART);
+        p1->l = Expression(RP);
+        if (haveMistake == 1)
+            return NULL;
+        if (p1->l == NULL)
+        {
+            Warning("whileStatementCondition部分出错");
+            haveMistake = 1;
+            return NULL;
+        }
+        ASTTree *p2;
+        w = getToken(fr);
+        ignore(&w);
+        level++;
+        if (w == LB)
+        {
+            p2 = CompState();
+        }
+        else
+        {
+            p2 = Statement();
+        }
+        removeIdent();
+        level--;
+        root->type = WHILESTATEMENT;
+        root->l = p1;
+        root->r = p2;
+        isInRecycle--;
+        return root;
+    }
+    case FOR:
+    {
+        isInRecycle++;
+        w = getToken(fr);
+        ignore(&w);
+        if (w != LP)
+        {
+            Warning("Error in FOR");
+            haveMistake = 1;
+            return NULL;
+        }
+        w = getToken(fr);
+        ignore(&w);
+        ASTTree *p1 = newNode(FORPART);
+        ASTTree *q = newNode(FORPART1); // FOR part 1
+        p1->l = q;
+        q->l = Expression(SEMI);
+        if (haveMistake == 1)
+            return NULL;
+        if (q->l == NULL)
+        {
+            q->data.data = "None";
+        }
+        w = getToken(fr);
+        ignore(&w);
+        q->r = newNode(FORPART2); // FOR part 2
+        q = q->r;
+        q->l = Expression(SEMI);
+        if (haveMistake == 1)
+            return NULL;
+        if (q->l == NULL)
+        {
+            q->data.data = "None";
+        }
+        w = getToken(fr);
+        ignore(&w);
+        q->r = newNode(FORPART3); // FOR part 3
+        q = q->r;
+        q->l = Expression(RP);
+        if (haveMistake == 1)
+            return NULL;
+        if (q->l == NULL)
+        {
+            q->data.data = "None";
+        }
 
-            ASTTree *p2 = newNode(DOWHILECONDITION);
-            level++;
-            p1 = CompState();
-            removeIdent();
-            level--;
-            root->l = p1;
-            root->r = p2;
-            if (haveMistake == 1)return NULL;
-            w = getToken(fr);
-            ignore(&w);
-            if (w != WHILE) {
-                Warning("missing WHILE in do-while");
-                freeTree(root);
-                haveMistake = 1;
+        ASTTree *p2 = newNode(FORBODY); // FOR body
+        w = getToken(fr);
+        ignore(&w);
+        level++;
+        if (w == LB)
+        {
+            p2->r = CompState();
+            if (haveMistake == 1)
                 return NULL;
-            }
-            root->type = DOWHILESTATEMENT;
-            w = getToken(fr);
-            ignore(&w);
-            if (w != LP) {
-                Warning("missing condition in do-while");
-                freeTree(root);
-                haveMistake = 1;
-                return NULL;
-            }
-            w = getToken(fr);
-            ignore(&w);
-            p2->l = Expression(RP);
-            if (haveMistake == 1)return NULL;
-            if (p2->l == NULL) {
-                Warning("missing condition in do-while");
-                haveMistake = 1;
-                return NULL;
-            }
-            w = getToken(fr);
-            ignore(&w);
-            if (w != SEMI) {
-                Warning("missing semicolon in do-while");
-                freeTree(root);
-                haveMistake = 1;
-                return NULL;
-            }
-            isInRecycle--;
-            return root;
         }
-        case BREAK: {
-            w = getToken(fr);
-            ignore(&w);
-            if (w != SEMI) {
-                Warning("missing semicolon in BREAK");
-                haveMistake = 1;
+        else
+        {
+            p2->r = Statement();
+            if (haveMistake == 1)
                 return NULL;
-            }
-            if (isInRecycle == 0) {
-                Warning("unexpected BREAK");
-                haveMistake = 1;
-                return NULL;
-            }
-            root->type = BREAKSTATEMENT;
-            return root;
+            p2->r->r = NULL;
         }
-        case CONTINUE: {
-            w = getToken(fr);
-            ignore(&w);
-            if (w != SEMI) {
-                Warning("missing semicolon in continue");
-                haveMistake = 1;
-                return NULL;
-            }
-            if (isInRecycle == 0) {
-                Warning("unexpected continue");
-                haveMistake = 1;
-                return NULL;
-            }
-            root->type = CONTINUESTATEMENT;
-            return root;
+        removeIdent();
+        level--;
+        root->type = FORSTATEMENT;
+        root->l = p1;
+        root->r = p2;
+        isInRecycle--;
+        return root;
+    }
+    case RETURN:
+    {
+        hasReturn = 1;
+        if (isVoid == 1)
+        {
+            Warning("There should be no return statement\n");
+            haveMistake = 1;
+            return NULL;
         }
-        case INT_CONST:
-        case LONG_CONST:
-        case DOUBLE_CONST:
-        case FLOAT_CONST:
-        case CHAR_CONST:
-        case IDENT:
-        case ARRAY:
-            return Expression(SEMI);
+        root->type = RETURNSTATEMENT;
+        w = getToken(fr);
+        ignore(&w);
+        root->r = Expression(SEMI);
+        if (haveMistake == 1)
+            return NULL;
+        return root;
+    }
+    case DO:
+    {
+        isInRecycle++;
+        w = getToken(fr);
+        ignore(&w);
+        if (w != LB)
+        {
+            Warning("missing bracket in do-while\n");
+            haveMistake = 1;
+            return NULL;
+        }
+
+        ASTTree *p1;
+
+        ASTTree *p2 = newNode(DOWHILECONDITION);
+        level++;
+        p1 = CompState();
+        removeIdent();
+        level--;
+        root->l = p1;
+        root->r = p2;
+        if (haveMistake == 1)
+            return NULL;
+        w = getToken(fr);
+        ignore(&w);
+        if (w != WHILE)
+        {
+            Warning("missing WHILE in do-while");
+            freeTree(root);
+            haveMistake = 1;
+            return NULL;
+        }
+        root->type = DOWHILESTATEMENT;
+        w = getToken(fr);
+        ignore(&w);
+        if (w != LP)
+        {
+            Warning("missing condition in do-while");
+            freeTree(root);
+            haveMistake = 1;
+            return NULL;
+        }
+        w = getToken(fr);
+        ignore(&w);
+        p2->l = Expression(RP);
+        if (haveMistake == 1)
+            return NULL;
+        if (p2->l == NULL)
+        {
+            Warning("missing condition in do-while");
+            haveMistake = 1;
+            return NULL;
+        }
+        w = getToken(fr);
+        ignore(&w);
+        if (w != SEMI)
+        {
+            Warning("missing semicolon in do-while");
+            freeTree(root);
+            haveMistake = 1;
+            return NULL;
+        }
+        isInRecycle--;
+        return root;
+    }
+    case BREAK:
+    {
+        w = getToken(fr);
+        ignore(&w);
+        if (w != SEMI)
+        {
+            Warning("missing semicolon in BREAK");
+            haveMistake = 1;
+            return NULL;
+        }
+        if (isInRecycle == 0)
+        {
+            Warning("unexpected BREAK");
+            haveMistake = 1;
+            return NULL;
+        }
+        root->type = BREAKSTATEMENT;
+        return root;
+    }
+    case CONTINUE:
+    {
+        w = getToken(fr);
+        ignore(&w);
+        if (w != SEMI)
+        {
+            Warning("missing semicolon in continue");
+            haveMistake = 1;
+            return NULL;
+        }
+        if (isInRecycle == 0)
+        {
+            Warning("unexpected continue");
+            haveMistake = 1;
+            return NULL;
+        }
+        root->type = CONTINUESTATEMENT;
+        return root;
+    }
+    case INT_CONST:
+    case LONG_CONST:
+    case DOUBLE_CONST:
+    case FLOAT_CONST:
+    case CHAR_CONST:
+    case IDENT:
+    case ARRAY:
+        return Expression(SEMI);
     }
     return root;
 }
 
-ASTTree *Expression(int end) {
-    if (w == end) {
+ASTTree *Expression(int end)
+{
+    if (w == end)
+    {
         return NULL;
     }
     int error = 0;
@@ -801,22 +961,29 @@ ASTTree *Expression(int end) {
     Stack opn;
     stack_init(&opn, 1000);
     ASTTree *t, *t1, *t2, *root;
-    while (((w != end) || (((ASTTree *) stack_top(&op))->data.type != POUND)) && !error) {
-        if (((ASTTree *) stack_top(&op))->data.type == RP) {
-            if (op.len < 3) {
+    while (((w != end) || (((ASTTree *)stack_top(&op))->data.type != POUND)) && !error)
+    {
+        if (((ASTTree *)stack_top(&op))->data.type == RP)
+        {
+            if (op.len < 3)
+            {
                 error++;
                 break;
             }
             stack_pop(&op);
             stack_pop(&op);
         }
-        if (w == IDENT) {
-            if (checkIdent(token_text_, FUNC) == 1) {
+        if (w == IDENT)
+        {
+            if (checkIdent(token_text_, FUNC) == 1)
+            {
                 p = FuncCall();
                 stack_push(&opn, p);
                 w = getToken(fr);
                 ignore(&w);
-            } else if (checkIdent(token_text_, VAR) == 0) {
+            }
+            else if (checkIdent(token_text_, VAR) == 0)
+            {
                 stack_free(&op);
                 stack_free(&opn);
                 Warning("Using undeclared ident");
@@ -825,30 +992,38 @@ ASTTree *Expression(int end) {
             }
         }
         if (w == IDENT || w == INT_CONST || w == LONG_CONST || w == FLOAT_CONST || w == DOUBLE_CONST ||
-            w == CHAR_CONST || w == ARRAY || w == STRING_CONST) {
+            w == CHAR_CONST || w == ARRAY || w == STRING_CONST)
+        {
             p = newNode(OPERAND);
-            char *token_text1 = (char *) malloc(MAX_LEN * sizeof(char));
+            char *token_text1 = (char *)malloc(MAX_LEN * sizeof(char));
             strcpy(token_text1, token_text_);
             p->data.data = token_text1;
             stack_push(&opn, p);
             w = getToken(fr);
             ignore(&w);
-        } else if (w == end) {
+        }
+        else if (w == end)
+        {
             p = newNode(OPERATOR);
             p->data.type = POUND;
-            while (((ASTTree *) stack_top(&op))->data.type != POUND) {
-                t2 = ((ASTTree *) stack_top(&opn));
+            while (((ASTTree *)stack_top(&op))->data.type != POUND)
+            {
+                t2 = ((ASTTree *)stack_top(&opn));
                 if (t2 != NULL)
                     stack_pop(&opn);
-                if (opn.len == 0) {
+                if (opn.len == 0)
+                {
                     t1 = NULL;
-                } else {
-                    t1 = ((ASTTree *) stack_top(&opn));
+                }
+                else
+                {
+                    t1 = ((ASTTree *)stack_top(&opn));
                 }
                 if (t1 != NULL)
                     stack_pop(&opn);
-                t = ((ASTTree *) stack_top(&op));
-                if (!t) {
+                t = ((ASTTree *)stack_top(&op));
+                if (!t)
+                {
                     error++;
                     break;
                 }
@@ -857,81 +1032,94 @@ ASTTree *Expression(int end) {
                 t->r = t2;
                 stack_push(&opn, t);
             }
-            if (opn.len != 1) {
+            if (opn.len != 1)
+            {
                 error++;
             }
-
-        } else if (w >= EQ && w <= OR) {
-            char *token_text1 = (char *) malloc(MAX_LEN * sizeof(char));  //@
-            switch (Precede(((ASTTree *) stack_top(&op))->data.type, w)) {
-                case '<':
-                    p = newNode(OPERATOR);
-                    p->data.type = w;
-                    strcpy(token_text1, token_text_);
-                    p->data.data = token_text1;
-                    stack_push(&op, p);
-                    w = getToken(fr);
-                    ignore(&w);
-                    break;
-                case '=':
-                    t = ((ASTTree *) stack_top(&op));
-                    if (!t) {
-                        error++;
-                        stack_pop(&op);
-                    }
-                    w = getToken(fr);
-                    ignore(&w);
-                    break;
-                case '>':
-                    t2 = ((ASTTree *) stack_top(&opn));
-                    if (t2 != NULL)
-                        stack_pop(&opn);
-                    if (opn.len == 0) {
-                        t1 = NULL;
-                    } else {
-                        t1 = ((ASTTree *) stack_top(&opn));
-                    }
-                    if (t1 != NULL)
-                        stack_pop(&opn);
-                    t = ((ASTTree *) stack_top(&op));
-                    if (!t) {
-                        error++;
-                        break;
-                    }
+        }
+        else if (w >= EQ && w <= OR)
+        {
+            char *token_text1 = (char *)malloc(MAX_LEN * sizeof(char)); //@
+            switch (Precede(((ASTTree *)stack_top(&op))->data.type, w))
+            {
+            case '<':
+                p = newNode(OPERATOR);
+                p->data.type = w;
+                strcpy(token_text1, token_text_);
+                p->data.data = token_text1;
+                stack_push(&op, p);
+                w = getToken(fr);
+                ignore(&w);
+                break;
+            case '=':
+                t = ((ASTTree *)stack_top(&op));
+                if (!t)
+                {
+                    error++;
                     stack_pop(&op);
-                    t->l = t1;
-                    t->r = t2;
-                    stack_push(&opn, t);
-
-                    p = newNode(OPERATOR);
-                    p->data.type = w;
-                    strcpy(token_text1, token_text_);
-                    p->data.data = token_text1;
-                    stack_push(&op, p);
-
-                    w = getToken(fr);
-                    ignore(&w);
+                }
+                w = getToken(fr);
+                ignore(&w);
+                break;
+            case '>':
+                t2 = ((ASTTree *)stack_top(&opn));
+                if (t2 != NULL)
+                    stack_pop(&opn);
+                if (opn.len == 0)
+                {
+                    t1 = NULL;
+                }
+                else
+                {
+                    t1 = ((ASTTree *)stack_top(&opn));
+                }
+                if (t1 != NULL)
+                    stack_pop(&opn);
+                t = ((ASTTree *)stack_top(&op));
+                if (!t)
+                {
+                    error++;
                     break;
-                case '\0':
-                    stack_free(&op);
-                    stack_free(&opn);
-                    Warning("unknown operator");
-                    haveMistake = 1;
-                    return NULL;
+                }
+                stack_pop(&op);
+                t->l = t1;
+                t->r = t2;
+                stack_push(&opn, t);
+
+                p = newNode(OPERATOR);
+                p->data.type = w;
+                strcpy(token_text1, token_text_);
+                p->data.data = token_text1;
+                stack_push(&op, p);
+
+                w = getToken(fr);
+                ignore(&w);
+                break;
+            case '\0':
+                stack_free(&op);
+                stack_free(&opn);
+                Warning("unknown operator");
+                haveMistake = 1;
+                return NULL;
             }
-        } else {
+        }
+        else
+        {
             error = 1;
         }
     }
-    if ((opn.len == 1) && (((ASTTree *) stack_top(&op))->data.type == POUND) && error == 0) {
-        t = ((ASTTree *) stack_top(&opn));
+    if ((opn.len == 1) && (((ASTTree *)stack_top(&op))->data.type == POUND) && error == 0)
+    {
+        t = ((ASTTree *)stack_top(&opn));
         stack_pop(&opn);
         root = newNode(EXPRESSION);
         root->l = t;
         stack_free(&op);
         stack_free(&opn);
         return root;
-    } else {
+    }
+    else
+    {
         stack_free(&op);
         stack_free(&opn);
         Warning("wrong expression");
@@ -940,463 +1128,526 @@ ASTTree *Expression(int end) {
     }
 }
 
-ASTTree *FuncCall() {
-    if (haveMistake == 1) {
+ASTTree *FuncCall()
+{
+    if (haveMistake == 1)
+    {
         return NULL;
     }
     ASTTree *root = newNode(FUNCCALL);
     root->l = newNode(FUNCNAME);
     {
-        char *func_name = (char *) malloc(MAX_LEN * sizeof(char));
+        char *func_name = (char *)malloc(MAX_LEN * sizeof(char));
         strcpy(func_name, token_text_);
         root->l->data.data = func_name;
     }
     int a = getToken(fr);
-    if (a != LP) {
+    if (a != LP)
+    {
         haveMistake = 1;
         Warning("Expected '('");
         return NULL;
     }
     root->r = ActualParaList();
-    if (haveMistake == 1) {
+    if (haveMistake == 1)
+    {
         return NULL;
     }
     return root;
 }
 
-ASTTree *ActualParaList() {
-    if (haveMistake == 1) {
+ASTTree *ActualParaList()
+{
+    if (haveMistake == 1)
+    {
         return NULL;
     }
     w = getToken(fr);
     ignore(&w);
-    if (w == RP) {
+    if (w == RP)
+    {
         return NULL;
     }
-    if (w == COMMA) {
+    if (w == COMMA)
+    {
         w = getToken(fr);
         ignore(&w);
     }
 
     ASTTree *root = newNode(ACTUALPARALIST);
     root->l = ActualPara();
-    if (haveMistake == 1) {
+    if (haveMistake == 1)
+    {
         return NULL;
     }
     root->r = ActualParaList();
-    if (haveMistake == 1) {
+    if (haveMistake == 1)
+    {
         return NULL;
     }
     return root;
-
 }
 
-ASTTree *ActualPara() {
-    if (haveMistake == 1) {
+ASTTree *ActualPara()
+{
+    if (haveMistake == 1)
+    {
         return NULL;
     }
-    if (w != IDENT && w != INT_CONST && w != LONG_CONST && w != FLOAT_CONST && w != CHAR_CONST && w != DOUBLE_CONST) {
+    if (w != IDENT && w != INT_CONST && w != LONG_CONST && w != FLOAT_CONST && w != CHAR_CONST && w != DOUBLE_CONST)
+    {
         haveMistake = 1;
         return NULL;
     }
     ASTTree *root = newNode(ACTUALPAR);
-    char *tmp_text = (char *) malloc(MAX_LEN * sizeof(char));
+    char *tmp_text = (char *)malloc(MAX_LEN * sizeof(char));
     strcpy(tmp_text, token_text_);
     root->data.data = tmp_text;
     root->data.type = w;
     return root;
 }
 
-char Precede(int c1, int c2) {
-    if (haveMistake == 1) {
+char Precede(int c1, int c2)
+{
+    if (haveMistake == 1)
+    {
         return -1;
     }
-    if (c1 == PLUS || c1 == MINUS) {
-        switch (c2) {
-            case OR:
-            case AND:
-            case PLUS:
-            case MINUS:
-            case RP:
-            case POUND:
-            case MORE:
-            case LESS:
-            case MOREEQ:
-            case LESSEQ:
-            case EQ:
-            case NEQ:
-            case ASSIGN:
-                return '>';
-            case TIMES:
-            case DIVIDE:
-            case LP:
-                return '<';
-            default:
-                return '\0';
+    if (c1 == PLUS || c1 == MINUS)
+    {
+        switch (c2)
+        {
+        case OR:
+        case AND:
+        case PLUS:
+        case MINUS:
+        case RP:
+        case POUND:
+        case MORE:
+        case LESS:
+        case MOREEQ:
+        case LESSEQ:
+        case EQ:
+        case NEQ:
+        case ASSIGN:
+            return '>';
+        case TIMES:
+        case DIVIDE:
+        case LP:
+            return '<';
+        default:
+            return '\0';
         }
-    } else if (c1 == TIMES || c1 == DIVIDE) {
-        switch (c2) {
-            case OR:
-            case AND:
-            case PLUS:
-            case MINUS:
-            case RP:
-            case POUND:
-            case TIMES:
-            case DIVIDE:
-            case MORE:
-            case LESS:
-            case MOREEQ:
-            case LESSEQ:
-            case EQ:
-            case NEQ:
-                return '>';
-            case LP:
-                return '<';
-            default:
-                return '\0';
+    }
+    else if (c1 == TIMES || c1 == DIVIDE)
+    {
+        switch (c2)
+        {
+        case OR:
+        case AND:
+        case PLUS:
+        case MINUS:
+        case RP:
+        case POUND:
+        case TIMES:
+        case DIVIDE:
+        case MORE:
+        case LESS:
+        case MOREEQ:
+        case LESSEQ:
+        case EQ:
+        case NEQ:
+            return '>';
+        case LP:
+            return '<';
+        default:
+            return '\0';
         }
-    } else if (c1 == LP) {
-        switch (c2) {
-            case OR:
-            case AND:
-            case PLUS:
-            case MINUS:
-            case TIMES:
-            case DIVIDE:
-            case LP:
-                return '<';
-            case RP:
-                return '=';
-            case MORE:
-            case LESS:
-            case MOREEQ:
-            case LESSEQ:
-            case EQ:
-            case NEQ:
-            case POUND:
-                return '>';
-            default:
-                return '\0';
+    }
+    else if (c1 == LP)
+    {
+        switch (c2)
+        {
+        case OR:
+        case AND:
+        case PLUS:
+        case MINUS:
+        case TIMES:
+        case DIVIDE:
+        case LP:
+            return '<';
+        case RP:
+            return '=';
+        case MORE:
+        case LESS:
+        case MOREEQ:
+        case LESSEQ:
+        case EQ:
+        case NEQ:
+        case POUND:
+            return '>';
+        default:
+            return '\0';
         }
-    } else if (c1 == RP) {
-        switch (c2) {
-            case OR:
-            case AND:
-            case PLUS:
-            case MINUS:
-            case TIMES:
-            case DIVIDE:
-            case LP:
-            case MORE:
-            case LESS:
-            case MOREEQ:
-            case LESSEQ:
-            case EQ:
-            case NEQ:
-            case POUND:
-                return '>';
-            default:
-                return '\0';
+    }
+    else if (c1 == RP)
+    {
+        switch (c2)
+        {
+        case OR:
+        case AND:
+        case PLUS:
+        case MINUS:
+        case TIMES:
+        case DIVIDE:
+        case LP:
+        case MORE:
+        case LESS:
+        case MOREEQ:
+        case LESSEQ:
+        case EQ:
+        case NEQ:
+        case POUND:
+            return '>';
+        default:
+            return '\0';
         }
-    } else if (c1 == ASSIGN) {
-        switch (c2) {
-            case OR:
-            case AND:
-            case PLUS:
-            case MINUS:
-            case TIMES:
-            case DIVIDE:
-            case LP:
-            case MORE:
-            case LESS:
-            case MOREEQ:
-            case LESSEQ:
-            case EQ:
-            case NEQ:
-                return '<';
-            case POUND:
-                return '>';
-            default:
-                return '\0';
+    }
+    else if (c1 == ASSIGN)
+    {
+        switch (c2)
+        {
+        case OR:
+        case AND:
+        case PLUS:
+        case MINUS:
+        case TIMES:
+        case DIVIDE:
+        case LP:
+        case MORE:
+        case LESS:
+        case MOREEQ:
+        case LESSEQ:
+        case EQ:
+        case NEQ:
+            return '<';
+        case POUND:
+            return '>';
+        default:
+            return '\0';
         }
-    } else if (c1 == MORE || c1 == LESS || c1 == MOREEQ || c1 == LESSEQ) {
-        switch (c2) {
-            case PLUS:
-            case MINUS:
-            case TIMES:
-            case DIVIDE:
-            case LP:
-                return '<';
-            case OR:
-            case AND:
-            case RP:
-            case MORE:
-            case LESS:
-            case MOREEQ:
-            case LESSEQ:
-            case EQ:
-            case NEQ:
-            case POUND:
-                return '>';
-            default:
-                return '\0';
+    }
+    else if (c1 == MORE || c1 == LESS || c1 == MOREEQ || c1 == LESSEQ)
+    {
+        switch (c2)
+        {
+        case PLUS:
+        case MINUS:
+        case TIMES:
+        case DIVIDE:
+        case LP:
+            return '<';
+        case OR:
+        case AND:
+        case RP:
+        case MORE:
+        case LESS:
+        case MOREEQ:
+        case LESSEQ:
+        case EQ:
+        case NEQ:
+        case POUND:
+            return '>';
+        default:
+            return '\0';
         }
-    } else if (c1 == EQ || c1 == NEQ) {
-        switch (c2) {
-            case PLUS:
-            case MINUS:
-            case TIMES:
-            case DIVIDE:
-            case LP:
-            case MORE:
-            case LESS:
-            case MOREEQ:
-            case LESSEQ:
-                return '<';
-            case OR:
-            case AND:
-            case RP:
-            case EQ:
-            case NEQ:
-            case POUND:
-                return '>';
-            default:
-                return '\0';
+    }
+    else if (c1 == EQ || c1 == NEQ)
+    {
+        switch (c2)
+        {
+        case PLUS:
+        case MINUS:
+        case TIMES:
+        case DIVIDE:
+        case LP:
+        case MORE:
+        case LESS:
+        case MOREEQ:
+        case LESSEQ:
+            return '<';
+        case OR:
+        case AND:
+        case RP:
+        case EQ:
+        case NEQ:
+        case POUND:
+            return '>';
+        default:
+            return '\0';
         }
-    } else if (c1 == POUND) {
-        switch (c2) {
-            case OR:
-            case AND:
-            case PLUS:
-            case MINUS:
-            case TIMES:
-            case DIVIDE:
-            case LP:
-            case MORE:
-            case LESS:
-            case MOREEQ:
-            case LESSEQ:
-            case RP:
-            case EQ:
-            case NEQ:
-            case ASSIGN:
-                return '<';
-            case POUND:
-                return '=';
-            default:
-                return '\0';
+    }
+    else if (c1 == POUND)
+    {
+        switch (c2)
+        {
+        case OR:
+        case AND:
+        case PLUS:
+        case MINUS:
+        case TIMES:
+        case DIVIDE:
+        case LP:
+        case MORE:
+        case LESS:
+        case MOREEQ:
+        case LESSEQ:
+        case RP:
+        case EQ:
+        case NEQ:
+        case ASSIGN:
+            return '<';
+        case POUND:
+            return '=';
+        default:
+            return '\0';
         }
-    } else if (c1 == OR) {
-        switch (c2) {
-            case AND:
-            case PLUS:
-            case MINUS:
-            case TIMES:
-            case DIVIDE:
-            case LP:
-            case MORE:
-            case LESS:
-            case MOREEQ:
-            case LESSEQ:
-            case RP:
-            case EQ:
-            case NEQ:
-                return '<';
-            case OR:
-            case ASSIGN:
-            case POUND:
-                return '>';
-            default:
-                return '\0';
+    }
+    else if (c1 == OR)
+    {
+        switch (c2)
+        {
+        case AND:
+        case PLUS:
+        case MINUS:
+        case TIMES:
+        case DIVIDE:
+        case LP:
+        case MORE:
+        case LESS:
+        case MOREEQ:
+        case LESSEQ:
+        case RP:
+        case EQ:
+        case NEQ:
+            return '<';
+        case OR:
+        case ASSIGN:
+        case POUND:
+            return '>';
+        default:
+            return '\0';
         }
-    } else if (c1 == AND) {
-        switch (c2) {
-            case PLUS:
-            case MINUS:
-            case TIMES:
-            case DIVIDE:
-            case LP:
-            case MORE:
-            case LESS:
-            case MOREEQ:
-            case LESSEQ:
-            case RP:
-            case EQ:
-            case NEQ:
-                return '<';
-            case OR:
-            case AND:
-            case ASSIGN:
-            case POUND:
-                return '>';
-            default:
-                return '\0';
+    }
+    else if (c1 == AND)
+    {
+        switch (c2)
+        {
+        case PLUS:
+        case MINUS:
+        case TIMES:
+        case DIVIDE:
+        case LP:
+        case MORE:
+        case LESS:
+        case MOREEQ:
+        case LESSEQ:
+        case RP:
+        case EQ:
+        case NEQ:
+            return '<';
+        case OR:
+        case AND:
+        case ASSIGN:
+        case POUND:
+            return '>';
+        default:
+            return '\0';
         }
     }
     return -1;
 }
 
-void returnToken(FILE *fp) {
+void returnToken(FILE *fp)
+{
     int len = strlen(token_text_);
     int i;
-    for (i = 0; i < len; i++) {
+    for (i = 0; i < len; i++)
+    {
         ungetc(token_text_[len - 1 - i], fp);
     }
 }
 
-void showType(int cur_type) {
-    switch (cur_type) {
-        case EXTDEFLIST:
-            printf("ExtDefList\n");
-            break;
-        case EXTVARDEF:
-            printf("ExtVarDef\n");
-            break;
-        case EXTVARTYPE:
-            printf("ExtVarType\n");
-            break;
-        case EXTVARLIST:
-            printf("ExtVarList\n");
-            break;
-        case EXTVAR:
-            printf("ExtVar\n");
-            break;
-        case FUNCDEF:
-            printf("FuncDef\n");
-            break;
-        case FUNCRETURNTYPE:
-            printf("FuncReturnType\n");
-            break;
-        case FUNCNAME:
-            printf("FuncName\n");
-            break;
-        case FUNCFORMALPARALIST:
-            printf("FuncFormalParamList\n");
-            break;
-        case FUNCFORMALPARADEF:
-            printf("FuncFormalParmaDef\n");
-            break;
-        case FUNCFORMALPARATYPE:
-            printf("FuncFormalParmaType\n");
-            break;
-        case FUNCFORMALPARA:
-            printf("FuncFormalPara\n");
-            break;
-        case FUNCCALL:
-            printf("FuncCall\n");
-            break;
-        case ACTUALPARALIST:
-            printf("ActualParaList\n");
-            break;
-        case ACTUALPAR:
-            printf("ActualPara\n");
-            break;
-        case COMPSTATE:
-            printf("CompState\n");
-            break;
-        case LOCALVARDEFLIST:
-            printf("LocalVarDefList\n");
-            break;
-        case LOCALVARDEF:
-            printf("LocalVarDef\n");
-            break;
-        case LOCALVARTYPE:
-            printf("LocalVarType\n");
-            break;
-        case LOCALVARNAMELIST:
-            printf("LocalVarNameList\n");
-            break;
-        case LOCALVARNAME:
-            printf("LocalVarName\n");
-            break;
-        case STATELIST:
-            printf("StateList\n");
-            break;
-        case OPERAND:
-            printf("Operand\n");
-            break;
-        case OPERATOR:
-            printf("Operator\n");
-            break;
-        case EXPRESSION:
-            printf("Expression\n");
-            break;
-        case IFPART:
-            printf("IF-Statement\n");
-            break;
-        case ELSEPART:
-            printf("ELSE-Statement\n");
-            break;
-        case IFSTATEMENT:
-            printf("IF-Statement\n");
-            break;
-        case IFELSESTATEMENT:
-            printf("IF-ELSE-Statement\n");
-            break;
-        case WHILESTATEMENT:
-            printf("WHILE-Statement\n");
-            break;
-        case WHILEPART:
-            printf("WHILE-Condition\n");
-            break;
-        case FORSTATEMENT:
-            printf("FOR-Statement\n");
-            break;
-        case FORPART:
-            printf("FOR-Condition\n");
-            break;
-        case FORPART1:
-            printf("FOR-Part1\n");
-            break;
-        case FORPART2:
-            printf("FOR-Part2\n");
-            break;
-        case FORPART3:
-            printf("FOR-Part3\n");
-            break;
-        case FORBODY:
-            printf("FOR-Body\n");
-            break;
-        case RETURNSTATEMENT:
-            printf("RETURN-Statement\n");
-            break;
-        case BREAKSTATEMENT:
-            printf("BREAK-Statement\n");
-            break;
-        case DOWHILESTATEMENT:
-            printf("DO-WHILE-Statement\n");
-            break;
-        case DOWHILECONDITION:
-            printf("DO-WHILE-Condition\n");
-            break;
-        case CONTINUESTATEMENT:
-            printf("continueStatement\n");
-            break;
-        case FUNCCLAIM:
-            printf("FuncClaim\n");
-            break;
-        default:
-            printf("ErrType %d\n", cur_type);
-            break;
+void showType(int cur_type)
+{
+    switch (cur_type)
+    {
+    case EXTDEFLIST:
+        printf("ExtDefList");
+        break;
+    case EXTVARDEF:
+        printf("ExtVarDef");
+        break;
+    case EXTVARTYPE:
+        printf("ExtVarType");
+        break;
+    case EXTVARLIST:
+        printf("ExtVarList");
+        break;
+    case EXTVAR:
+        printf("ExtVar");
+        break;
+    case FUNCDEF:
+        printf("FuncDef");
+        break;
+    case FUNCRETURNTYPE:
+        printf("FuncReturnType");
+        break;
+    case FUNCNAME:
+        printf("FuncName");
+        break;
+    case FUNCFORMALPARALIST:
+        printf("FuncFormalParamList");
+        break;
+    case FUNCFORMALPARADEF:
+        printf("FuncFormalParmaDef");
+        break;
+    case FUNCFORMALPARATYPE:
+        printf("FuncFormalParmaType");
+        break;
+    case FUNCFORMALPARA:
+        printf("FuncFormalPara");
+        break;
+    case FUNCCALL:
+        printf("FuncCall");
+        break;
+    case ACTUALPARALIST:
+        printf("ActualParaList");
+        break;
+    case ACTUALPAR:
+        printf("ActualPara");
+        break;
+    case COMPSTATE:
+        printf("CompState");
+        break;
+    case LOCALVARDEFLIST:
+        printf("LocalVarDefList");
+        break;
+    case LOCALVARDEF:
+        printf("LocalVarDef");
+        break;
+    case LOCALVARTYPE:
+        printf("LocalVarType");
+        break;
+    case LOCALVARNAMELIST:
+        printf("LocalVarNameList");
+        break;
+    case LOCALVARNAME:
+        printf("LocalVarName");
+        break;
+    case STATELIST:
+        printf("StateList");
+        break;
+    case OPERAND:
+        printf("Operand");
+        break;
+    case OPERATOR:
+        printf("Operator");
+        break;
+    case EXPRESSION:
+        printf("Expression");
+        break;
+    case IFPART:
+        printf("IF-Statement");
+        break;
+    case ELSEPART:
+        printf("ELSE-Statement");
+        break;
+    case IFSTATEMENT:
+        printf("IF-Statement");
+        break;
+    case IFELSESTATEMENT:
+        printf("IF-ELSE-Statement");
+        break;
+    case WHILESTATEMENT:
+        printf("WHILE-Statement");
+        break;
+    case WHILEPART:
+        printf("WHILE-Condition");
+        break;
+    case FORSTATEMENT:
+        printf("FOR-Statement");
+        break;
+    case FORPART:
+        printf("FOR-Condition");
+        break;
+    case FORPART1:
+        printf("FOR-Part1");
+        break;
+    case FORPART2:
+        printf("FOR-Part2");
+        break;
+    case FORPART3:
+        printf("FOR-Part3");
+        break;
+    case FORBODY:
+        printf("FOR-Body");
+        break;
+    case RETURNSTATEMENT:
+        printf("RETURN-Statement");
+        break;
+    case BREAKSTATEMENT:
+        printf("BREAK-Statement");
+        break;
+    case DOWHILESTATEMENT:
+        printf("DO-WHILE-Statement");
+        break;
+    case DOWHILECONDITION:
+        printf("DO-WHILE-Condition");
+        break;
+    case CONTINUESTATEMENT:
+        printf("continueStatement");
+        break;
+    case FUNCCLAIM:
+        printf("FuncClaim");
+        break;
+    default:
+        printf("ErrType %d\n", cur_type);
+        break;
     }
 }
 
-void preorderTranverse(ASTTree *root, int depth) {
-    if (root == NULL);
-    else {
+void preorderTranverse(ASTTree *root, int depth, int isend)
+{
+    if (root == NULL)
+        ;
+    else
+    {
         int i;
-        for (i = 0; i < depth; i++) {
-            printf("   ");
-        }
-        showType(root->type);
-        if (root->data.data != NULL) {
-            for (i = 0; i < depth; i++) {
+        for (i = 0; i < depth; i++)
+        {
+            if (line[i] == 1)
+            {
                 printf("   ");
             }
-            printf("%s\n", root->data.data);
+            else
+            {
+                printf("│  ");
+            }
         }
-        preorderTranverse(root->l, depth + 1);
-        preorderTranverse(root->r, depth + 1);
+        if (depth >= 0)
+        {
+            line[depth] = isend;
+            isend ? printf("└──") : printf("├──");
+        }
+        showType(root->type);
+        if (root->data.data != NULL)
+        {
+            printf(": %s", root->data.data);
+        }
+        putchar('\n');
+        isend = root->r == NULL;
+        preorderTranverse(root->l, depth + 1, isend);
+        preorderTranverse(root->r, depth + 1, 1);
     }
 }

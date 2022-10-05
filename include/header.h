@@ -14,11 +14,12 @@ FILE *fr, *fw;
 /**************************************
  *               Stack                *
  **************************************/
-typedef struct {
+typedef struct
+{
     void **base; /* 栈底 */
     void **top;  /* 栈顶 */
     int len;
-    int size;    /* 栈的大小 */
+    int size; /* 栈的大小 */
 } Stack;
 
 int stack_init(Stack *stack, int size);
@@ -36,7 +37,8 @@ void stack_free(Stack *stack);
 #define MAX_LEN 128
 extern int row_;
 extern char token_text_[MAX_LEN];
-typedef enum TokenType {
+typedef enum TokenType
+{
     // 错误码
     ERROR_TOKEN = 1,
     // 标识符
@@ -161,12 +163,14 @@ int lexicalAnalyse();
  **************************************/
 #define VAR 0
 #define FUNC 1
-typedef struct Note{
+typedef struct Note
+{
     int row;
     char data[128];
-}Note;
+} Note;
 
-typedef struct IdentNode {
+typedef struct IdentNode
+{
     int level;
     int type;
     char name[MAX_LEN];
@@ -193,17 +197,20 @@ extern Note notes[128];
 extern char include[128][128];
 extern char define[128][128];
 extern int haveMistake;
-typedef struct ASTTree {
+typedef struct ASTTree
+{
     struct ASTTree *l;
     struct ASTTree *r;
     int type;
-    struct data {
+    struct data
+    {
         int type;
         char *data;
     } data;
 } ASTTree;
 
-typedef enum DataType {
+typedef enum DataType
+{
     //外部定义序列
     EXTDEFLIST = 1,
     //外部变量定义
@@ -334,7 +341,7 @@ void returnToken(FILE *fp);
 
 void showType(int cur_type);
 
-void preorderTranverse(ASTTree *root, int depth);
+void preorderTranverse(ASTTree *root, int depth, int isend);
 
 /**************************************
  *               Format               *
@@ -345,4 +352,4 @@ void TABs(int d);
 
 void formatTree(ASTTree *T, int depth);
 
-#endif //AST_HEADER_H
+#endif // AST_HEADER_H
