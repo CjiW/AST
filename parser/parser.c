@@ -54,14 +54,10 @@ void freeTree(ASTTree *root) {
     }
 }
 
-ASTTree *program() {
-    row_ = 1;
-    haveMistake = 0;
-    tableInit();
-    clearToken();
-    w = getToken(fr);
-    while (w == ANNO || w == INCLUDE || w == DEFINE) {
-        switch (w) {
+// store notes, include and define
+void ignore(int *w){
+    while (*w == ANNO || *w == INCLUDE || *w == DEFINE) {
+        switch (*w) {
             case ANNO:
                 strcpy(notes[note_num++].data, token_text_);
                 notes->row = row_;
@@ -73,8 +69,17 @@ ASTTree *program() {
                 strcpy(define[define_num++], token_text_);
                 break;
         }
-        w = getToken(fr);
+        *w = getToken(fr);
     }
+}
+
+ASTTree *program() {
+    row_ = 1;
+    haveMistake = 0;
+    tableInit();
+    clearToken();
+    w = getToken(fr);
+    ignore(&w);
     ASTTree *p = ExtDefList();
     if (haveMistake == 1) {
         return NULL;
@@ -102,21 +107,7 @@ ASTTree *ExtDefList() {
     root->l = ExtDef();
     if (haveMistake == 1)return NULL;
     w = getToken(fr);
-    while (w == ANNO || w == INCLUDE || w == DEFINE) {
-        switch (w) {
-            case ANNO:
-                strcpy(notes[note_num++].data, token_text_);
-                notes->row = row_;
-                break;
-            case INCLUDE:
-                strcpy(include[include_num++], token_text_);
-                break;
-            case DEFINE:
-                strcpy(define[define_num++], token_text_);
-                break;
-        }
-        w = getToken(fr);
-    }
+    ignore(&w);
     root->r = ExtDefList();
     if (haveMistake == 1)return NULL;
     return root;
@@ -130,21 +121,7 @@ ASTTree *ExtDef() {
     }
     type = w;
     w = getToken(fr);
-    while (w == ANNO || w == INCLUDE || w == DEFINE) {
-        switch (w) {
-            case ANNO:
-                strcpy(notes[note_num++].data, token_text_);
-                notes->row = row_;
-                break;
-            case INCLUDE:
-                strcpy(include[include_num++], token_text_);
-                break;
-            case DEFINE:
-                strcpy(define[define_num++], token_text_);
-                break;
-        }
-        w = getToken(fr);
-    }
+    ignore(&w);
     if (w != IDENT && w != ARRAY) {
         Warning("Expected: ident(var Or func)");
         haveMistake = 1;
@@ -154,21 +131,7 @@ ASTTree *ExtDef() {
     strcpy(token_text0, token_text_);
     ASTTree *p;
     w = getToken(fr);
-    while (w == ANNO || w == INCLUDE || w == DEFINE) {
-        switch (w) {
-            case ANNO:
-                strcpy(notes[note_num++].data, token_text_);
-                notes->row = row_;
-                break;
-            case INCLUDE:
-                strcpy(include[include_num++], token_text_);
-                break;
-            case DEFINE:
-                strcpy(define[define_num++], token_text_);
-                break;
-        }
-        w = getToken(fr);
-    }
+    ignore(&w);
     strcpy(token_text_, token_text0);
     if (w == LP) {
         p = FuncDef();
@@ -270,21 +233,7 @@ ASTTree *ExtVarDef() {
         cnt = row_;
         w = getToken(fr);
 
-        while (w == ANNO || w == INCLUDE || w == DEFINE) {
-            switch (w) {
-                case ANNO:
-                    strcpy(notes[note_num++].data, token_text_);
-                    notes->row = row_;
-                    break;
-                case INCLUDE:
-                    strcpy(include[include_num++], token_text_);
-                    break;
-                case DEFINE:
-                    strcpy(define[define_num++], token_text_);
-                    break;
-            }
-            w = getToken(fr);
-        }
+        ignore(&w);
     }
 }
 
@@ -346,21 +295,7 @@ ASTTree *FuncDef() {
     q->l = FormParaList();
     if (haveMistake == 1)return NULL;
     w = getToken(fr);
-    while (w == ANNO || w == INCLUDE || w == DEFINE) {
-        switch (w) {
-            case ANNO:
-                strcpy(notes[note_num++].data, token_text_);
-                notes->row = row_;
-                break;
-            case INCLUDE:
-                strcpy(include[include_num++], token_text_);
-                break;
-            case DEFINE:
-                strcpy(define[define_num++], token_text_);
-                break;
-        }
-        w = getToken(fr);
-    }
+    ignore(&w);
     if (w == SEMI) {
         // prototype declare
         root->r->r = NULL;
@@ -385,41 +320,13 @@ ASTTree *FormParaList() {
         return NULL;
     }
     w = getToken(fr);
-    while (w == ANNO || w == INCLUDE || w == DEFINE) {
-        switch (w) {
-            case ANNO:
-                strcpy(notes[note_num++].data, token_text_);
-                notes->row = row_;
-                break;
-            case INCLUDE:
-                strcpy(include[include_num++], token_text_);
-                break;
-            case DEFINE:
-                strcpy(define[define_num++], token_text_);
-                break;
-        }
-        w = getToken(fr);
-    }
+    ignore(&w);
     if (w == RP) {
         return NULL;
     }
     if (w == COMMA) {
         w = getToken(fr);
-        while (w == ANNO || w == INCLUDE || w == DEFINE) {
-            switch (w) {
-                case ANNO:
-                    strcpy(notes[note_num++].data, token_text_);
-                    notes->row = row_;
-                    break;
-                case INCLUDE:
-                    strcpy(include[include_num++], token_text_);
-                    break;
-                case DEFINE:
-                    strcpy(define[define_num++], token_text_);
-                    break;
-            }
-            w = getToken(fr);
-        }
+        ignore(&w);
     }
     ASTTree *root = newNode(FUNCFORMALPARALIST);
     root->l = FormParaDef();
@@ -441,21 +348,7 @@ ASTTree *FormParaDef() {
     }
     type = w;
     w = getToken(fr);
-    while (w == ANNO || w == INCLUDE || w == DEFINE) {
-        switch (w) {
-            case ANNO:
-                strcpy(notes[note_num++].data, token_text_);
-                notes->row = row_;
-                break;
-            case INCLUDE:
-                strcpy(include[include_num++], token_text_);
-                break;
-            case DEFINE:
-                strcpy(define[define_num++], token_text_);
-                break;
-        }
-        w = getToken(fr);
-    }
+    ignore(&w);
     if (w != IDENT) {
         Warning("Expected: parameter's name");
         haveMistake = 1;
@@ -506,21 +399,7 @@ ASTTree *FormParaDef() {
 ASTTree *CompState() {
     ASTTree *root = newNode(COMPSTATE);
     w = getToken(fr);
-    while (w == ANNO || w == INCLUDE || w == DEFINE) {
-        switch (w) {
-            case ANNO:
-                strcpy(notes[note_num++].data, token_text_);
-                notes->row = row_;
-                break;
-            case INCLUDE:
-                strcpy(include[include_num++], token_text_);
-                break;
-            case DEFINE:
-                strcpy(define[define_num++], token_text_);
-                break;
-        }
-        w = getToken(fr);
-    }
+    ignore(&w);
     if (w == INT || w == DOUBLE || w == CHAR || w == LONG || w == SHORT ||
         w == FLOAT) {
         root->l = LocalVarDefList();
@@ -554,21 +433,7 @@ ASTTree *LocalVarDefList() {
     p->l->data.data = tmp_text;
 
     w = getToken(fr);
-    while (w == ANNO || w == INCLUDE || w == DEFINE) {
-        switch (w) {
-            case ANNO:
-                strcpy(notes[note_num++].data, token_text_);
-                notes->row = row_;
-                break;
-            case INCLUDE:
-                strcpy(include[include_num++], token_text_);
-                break;
-            case DEFINE:
-                strcpy(define[define_num++], token_text_);
-                break;
-        }
-        w = getToken(fr);
-    }
+    ignore(&w);
     ASTTree *q = newNode(LOCALVARNAMELIST);
 
     p->r = q;
@@ -584,57 +449,15 @@ ASTTree *LocalVarDefList() {
 
     while (1) {
         w = getToken(fr);
-        while (w == ANNO || w == INCLUDE || w == DEFINE) {
-            switch (w) {
-                case ANNO:
-                    strcpy(notes[note_num++].data, token_text_);
-                    notes->row = row_;
-                    break;
-                case INCLUDE:
-                    strcpy(include[include_num++], token_text_);
-                    break;
-                case DEFINE:
-                    strcpy(define[define_num++], token_text_);
-                    break;
-            }
-            w = getToken(fr);
-        }
+        ignore(&w);
         if (w == SEMI) {
             q->r = NULL;
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                switch (w) {
-                    case ANNO:
-                        strcpy(notes[note_num++].data, token_text_);
-                        notes->row = row_;
-                        break;
-                    case INCLUDE:
-                        strcpy(include[include_num++], token_text_);
-                        break;
-                    case DEFINE:
-                        strcpy(define[define_num++], token_text_);
-                        break;
-                }
-                w = getToken(fr);
-            }
+            ignore(&w);
             break;
         } else if (w == COMMA) {
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                switch (w) {
-                    case ANNO:
-                        strcpy(notes[note_num++].data, token_text_);
-                        notes->row = row_;
-                        break;
-                    case INCLUDE:
-                        strcpy(include[include_num++], token_text_);
-                        break;
-                    case DEFINE:
-                        strcpy(define[define_num++], token_text_);
-                        break;
-                }
-                w = getToken(fr);
-            }
+            ignore(&w);
             ASTTree *s = newNode(LOCALVARNAMELIST);
             q->r = s;
             q = q->r;
@@ -680,21 +503,7 @@ ASTTree *StateList() {
         root = newNode(STATELIST);
         root->l = r1;
         w = getToken(fr);
-        while (w == ANNO || w == INCLUDE || w == DEFINE) {
-            switch (w) {
-                case ANNO:
-                    strcpy(notes[note_num++].data, token_text_);
-                    notes->row = row_;
-                    break;
-                case INCLUDE:
-                    strcpy(include[include_num++], token_text_);
-                    break;
-                case DEFINE:
-                    strcpy(define[define_num++], token_text_);
-                    break;
-            }
-            w = getToken(fr);
-        }
+        ignore(&w);
         if (w != RB) {
             root->r = StateList();
             if (haveMistake == 1)return NULL;
@@ -713,21 +522,7 @@ ASTTree *Statement() {
     switch (w) {
         case IF: {
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                switch (w) {
-                    case ANNO:
-                        strcpy(notes[note_num++].data, token_text_);
-                        notes->row = row_;
-                        break;
-                    case INCLUDE:
-                        strcpy(include[include_num++], token_text_);
-                        break;
-                    case DEFINE:
-                        strcpy(define[define_num++], token_text_);
-                        break;
-                }
-                w = getToken(fr);
-            }
+            ignore(&w);
             if (w != LP) {
                 Warning("Excepted: '('");
                 haveMistake = 1;
@@ -735,21 +530,7 @@ ASTTree *Statement() {
             }
 
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                switch (w) {
-                    case ANNO:
-                        strcpy(notes[note_num++].data, token_text_);
-                        notes->row = row_;
-                        break;
-                    case INCLUDE:
-                        strcpy(include[include_num++], token_text_);
-                        break;
-                    case DEFINE:
-                        strcpy(define[define_num++], token_text_);
-                        break;
-                }
-                w = getToken(fr);
-            }
+            ignore(&w);
             ASTTree *p1 = newNode(IFPART);
             p1->l = Expression(RP);
             if (haveMistake == 1)return NULL;
@@ -759,21 +540,7 @@ ASTTree *Statement() {
                 return NULL;
             }
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                switch (w) {
-                    case ANNO:
-                        strcpy(notes[note_num++].data, token_text_);
-                        notes->row = row_;
-                        break;
-                    case INCLUDE:
-                        strcpy(include[include_num++], token_text_);
-                        break;
-                    case DEFINE:
-                        strcpy(define[define_num++], token_text_);
-                        break;
-                }
-                w = getToken(fr);
-            }
+            ignore(&w);
             level++;
             if (w == LB) {
                 p1->r = CompState();
@@ -787,41 +554,13 @@ ASTTree *Statement() {
             level--;
             root->l = p1;
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                switch (w) {
-                    case ANNO:
-                        strcpy(notes[note_num++].data, token_text_);
-                        notes->row = row_;
-                        break;
-                    case INCLUDE:
-                        strcpy(include[include_num++], token_text_);
-                        break;
-                    case DEFINE:
-                        strcpy(define[define_num++], token_text_);
-                        break;
-                }
-                w = getToken(fr);
-            }
+            ignore(&w);
             if (w == ELSE) {
                 root->type = IFELSESTATEMENT;
                 ASTTree *p2 = newNode(ELSEPART);
                 root->r = p2;
                 w = getToken(fr);
-                while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                    switch (w) {
-                        case ANNO:
-                            strcpy(notes[note_num++].data, token_text_);
-                            notes->row = row_;
-                            break;
-                        case INCLUDE:
-                            strcpy(include[include_num++], token_text_);
-                            break;
-                        case DEFINE:
-                            strcpy(define[define_num++], token_text_);
-                            break;
-                    }
-                    w = getToken(fr);
-                }
+                ignore(&w);
                 level++;
                 if (w == LB) {
                     p2->r = CompState();
@@ -842,21 +581,7 @@ ASTTree *Statement() {
         case WHILE: {
             isInRecycle++;
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                switch (w) {
-                    case ANNO:
-                        strcpy(notes[note_num++].data, token_text_);
-                        notes->row = row_;
-                        break;
-                    case INCLUDE:
-                        strcpy(include[include_num++], token_text_);
-                        break;
-                    case DEFINE:
-                        strcpy(define[define_num++], token_text_);
-                        break;
-                }
-                w = getToken(fr);
-            }
+            ignore(&w);
             if (w != LP) {
                 Warning("Error in WHILE");
                 haveMistake = 1;
@@ -864,21 +589,7 @@ ASTTree *Statement() {
             }
 
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                switch (w) {
-                    case ANNO:
-                        strcpy(notes[note_num++].data, token_text_);
-                        notes->row = row_;
-                        break;
-                    case INCLUDE:
-                        strcpy(include[include_num++], token_text_);
-                        break;
-                    case DEFINE:
-                        strcpy(define[define_num++], token_text_);
-                        break;
-                }
-                w = getToken(fr);
-            }
+            ignore(&w);
             ASTTree *p1 = newNode(WHILEPART);
             p1->l = Expression(RP);
             if (haveMistake == 1)return NULL;
@@ -889,21 +600,7 @@ ASTTree *Statement() {
             }
             ASTTree *p2;
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                switch (w) {
-                    case ANNO:
-                        strcpy(notes[note_num++].data, token_text_);
-                        notes->row = row_;
-                        break;
-                    case INCLUDE:
-                        strcpy(include[include_num++], token_text_);
-                        break;
-                    case DEFINE:
-                        strcpy(define[define_num++], token_text_);
-                        break;
-                }
-                w = getToken(fr);
-            }
+            ignore(&w);
             level++;
             if (w == LB) {
                 p2 = CompState();
@@ -921,42 +618,14 @@ ASTTree *Statement() {
         case FOR: {
             isInRecycle++;
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                switch (w) {
-                    case ANNO:
-                        strcpy(notes[note_num++].data, token_text_);
-                        notes->row = row_;
-                        break;
-                    case INCLUDE:
-                        strcpy(include[include_num++], token_text_);
-                        break;
-                    case DEFINE:
-                        strcpy(define[define_num++], token_text_);
-                        break;
-                }
-                w = getToken(fr);
-            }
+            ignore(&w);
             if (w != LP) {
                 Warning("Error in FOR");
                 haveMistake = 1;
                 return NULL;
             }
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                switch (w) {
-                    case ANNO:
-                        strcpy(notes[note_num++].data, token_text_);
-                        notes->row = row_;
-                        break;
-                    case INCLUDE:
-                        strcpy(include[include_num++], token_text_);
-                        break;
-                    case DEFINE:
-                        strcpy(define[define_num++], token_text_);
-                        break;
-                }
-                w = getToken(fr);
-            }
+            ignore(&w);
             ASTTree *p1 = newNode(FORPART);
             ASTTree *q = newNode(FORPART1);  // FOR part 1
             p1->l = q;
@@ -966,21 +635,7 @@ ASTTree *Statement() {
                 q->data.data = "None";
             }
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                switch (w) {
-                    case ANNO:
-                        strcpy(notes[note_num++].data, token_text_);
-                        notes->row = row_;
-                        break;
-                    case INCLUDE:
-                        strcpy(include[include_num++], token_text_);
-                        break;
-                    case DEFINE:
-                        strcpy(define[define_num++], token_text_);
-                        break;
-                }
-                w = getToken(fr);
-            }
+            ignore(&w);
             q->r = newNode(FORPART2);  // FOR part 2
             q = q->r;
             q->l = Expression(SEMI);
@@ -989,21 +644,7 @@ ASTTree *Statement() {
                 q->data.data = "None";
             }
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                switch (w) {
-                    case ANNO:
-                        strcpy(notes[note_num++].data, token_text_);
-                        notes->row = row_;
-                        break;
-                    case INCLUDE:
-                        strcpy(include[include_num++], token_text_);
-                        break;
-                    case DEFINE:
-                        strcpy(define[define_num++], token_text_);
-                        break;
-                }
-                w = getToken(fr);
-            }
+            ignore(&w);
             q->r = newNode(FORPART3);  // FOR part 3
             q = q->r;
             q->l = Expression(RP);
@@ -1014,21 +655,7 @@ ASTTree *Statement() {
 
             ASTTree *p2 = newNode(FORBODY);  // FOR body
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                switch (w) {
-                    case ANNO:
-                        strcpy(notes[note_num++].data, token_text_);
-                        notes->row = row_;
-                        break;
-                    case INCLUDE:
-                        strcpy(include[include_num++], token_text_);
-                        break;
-                    case DEFINE:
-                        strcpy(define[define_num++], token_text_);
-                        break;
-                }
-                w = getToken(fr);
-            }
+            ignore(&w);
             level++;
             if (w == LB) {
                 p2->r = CompState();
@@ -1055,21 +682,7 @@ ASTTree *Statement() {
             }
             root->type = RETURNSTATEMENT;
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                switch (w) {
-                    case ANNO:
-                        strcpy(notes[note_num++].data, token_text_);
-                        notes->row = row_;
-                        break;
-                    case INCLUDE:
-                        strcpy(include[include_num++], token_text_);
-                        break;
-                    case DEFINE:
-                        strcpy(define[define_num++], token_text_);
-                        break;
-                }
-                w = getToken(fr);
-            }
+            ignore(&w);
             root->r = Expression(SEMI);
             if (haveMistake == 1)return NULL;
             return root;
@@ -1077,21 +690,7 @@ ASTTree *Statement() {
         case DO: {
             isInRecycle++;
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                switch (w) {
-                    case ANNO:
-                        strcpy(notes[note_num++].data, token_text_);
-                        notes->row = row_;
-                        break;
-                    case INCLUDE:
-                        strcpy(include[include_num++], token_text_);
-                        break;
-                    case DEFINE:
-                        strcpy(define[define_num++], token_text_);
-                        break;
-                }
-                w = getToken(fr);
-            }
+            ignore(&w);
             if (w != LB) {
                 Warning("missing bracket in do-while\n");
                 haveMistake = 1;
@@ -1109,21 +708,7 @@ ASTTree *Statement() {
             root->r = p2;
             if (haveMistake == 1)return NULL;
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                switch (w) {
-                    case ANNO:
-                        strcpy(notes[note_num++].data, token_text_);
-                        notes->row = row_;
-                        break;
-                    case INCLUDE:
-                        strcpy(include[include_num++], token_text_);
-                        break;
-                    case DEFINE:
-                        strcpy(define[define_num++], token_text_);
-                        break;
-                }
-                w = getToken(fr);
-            }
+            ignore(&w);
             if (w != WHILE) {
                 Warning("missing WHILE in do-while");
                 freeTree(root);
@@ -1132,21 +717,7 @@ ASTTree *Statement() {
             }
             root->type = DOWHILESTATEMENT;
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                switch (w) {
-                    case ANNO:
-                        strcpy(notes[note_num++].data, token_text_);
-                        notes->row = row_;
-                        break;
-                    case INCLUDE:
-                        strcpy(include[include_num++], token_text_);
-                        break;
-                    case DEFINE:
-                        strcpy(define[define_num++], token_text_);
-                        break;
-                }
-                w = getToken(fr);
-            }
+            ignore(&w);
             if (w != LP) {
                 Warning("missing condition in do-while");
                 freeTree(root);
@@ -1154,21 +725,7 @@ ASTTree *Statement() {
                 return NULL;
             }
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                switch (w) {
-                    case ANNO:
-                        strcpy(notes[note_num++].data, token_text_);
-                        notes->row = row_;
-                        break;
-                    case INCLUDE:
-                        strcpy(include[include_num++], token_text_);
-                        break;
-                    case DEFINE:
-                        strcpy(define[define_num++], token_text_);
-                        break;
-                }
-                w = getToken(fr);
-            }
+            ignore(&w);
             p2->l = Expression(RP);
             if (haveMistake == 1)return NULL;
             if (p2->l == NULL) {
@@ -1177,21 +734,7 @@ ASTTree *Statement() {
                 return NULL;
             }
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                switch (w) {
-                    case ANNO:
-                        strcpy(notes[note_num++].data, token_text_);
-                        notes->row = row_;
-                        break;
-                    case INCLUDE:
-                        strcpy(include[include_num++], token_text_);
-                        break;
-                    case DEFINE:
-                        strcpy(define[define_num++], token_text_);
-                        break;
-                }
-                w = getToken(fr);
-            }
+            ignore(&w);
             if (w != SEMI) {
                 Warning("missing semicolon in do-while");
                 freeTree(root);
@@ -1203,21 +746,7 @@ ASTTree *Statement() {
         }
         case BREAK: {
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                switch (w) {
-                    case ANNO:
-                        strcpy(notes[note_num++].data, token_text_);
-                        notes->row = row_;
-                        break;
-                    case INCLUDE:
-                        strcpy(include[include_num++], token_text_);
-                        break;
-                    case DEFINE:
-                        strcpy(define[define_num++], token_text_);
-                        break;
-                }
-                w = getToken(fr);
-            }
+            ignore(&w);
             if (w != SEMI) {
                 Warning("missing semicolon in BREAK");
                 haveMistake = 1;
@@ -1233,21 +762,7 @@ ASTTree *Statement() {
         }
         case CONTINUE: {
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                switch (w) {
-                    case ANNO:
-                        strcpy(notes[note_num++].data, token_text_);
-                        notes->row = row_;
-                        break;
-                    case INCLUDE:
-                        strcpy(include[include_num++], token_text_);
-                        break;
-                    case DEFINE:
-                        strcpy(define[define_num++], token_text_);
-                        break;
-                }
-                w = getToken(fr);
-            }
+            ignore(&w);
             if (w != SEMI) {
                 Warning("missing semicolon in continue");
                 haveMistake = 1;
@@ -1300,21 +815,7 @@ ASTTree *Expression(int end) {
                 p = FuncCall();
                 stack_push(&opn, p);
                 w = getToken(fr);
-                while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                    switch (w) {
-                        case ANNO:
-                            strcpy(notes[note_num++].data, token_text_);
-                            notes->row = row_;
-                            break;
-                        case INCLUDE:
-                            strcpy(include[include_num++], token_text_);
-                            break;
-                        case DEFINE:
-                            strcpy(define[define_num++], token_text_);
-                            break;
-                    }
-                    w = getToken(fr);
-                }
+                ignore(&w);
             } else if (checkIdent(token_text_, VAR) == 0) {
                 stack_free(&op);
                 stack_free(&opn);
@@ -1331,21 +832,7 @@ ASTTree *Expression(int end) {
             p->data.data = token_text1;
             stack_push(&opn, p);
             w = getToken(fr);
-            while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                switch (w) {
-                    case ANNO:
-                        strcpy(notes[note_num++].data, token_text_);
-                        notes->row = row_;
-                        break;
-                    case INCLUDE:
-                        strcpy(include[include_num++], token_text_);
-                        break;
-                    case DEFINE:
-                        strcpy(define[define_num++], token_text_);
-                        break;
-                }
-                w = getToken(fr);
-            }
+            ignore(&w);
         } else if (w == end) {
             p = newNode(OPERATOR);
             p->data.type = POUND;
@@ -1384,21 +871,7 @@ ASTTree *Expression(int end) {
                     p->data.data = token_text1;
                     stack_push(&op, p);
                     w = getToken(fr);
-                    while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                        switch (w) {
-                            case ANNO:
-                                strcpy(notes[note_num++].data, token_text_);
-                                notes->row = row_;
-                                break;
-                            case INCLUDE:
-                                strcpy(include[include_num++], token_text_);
-                                break;
-                            case DEFINE:
-                                strcpy(define[define_num++], token_text_);
-                                break;
-                        }
-                        w = getToken(fr);
-                    }
+                    ignore(&w);
                     break;
                 case '=':
                     t = ((ASTTree *) stack_top(&op));
@@ -1407,21 +880,7 @@ ASTTree *Expression(int end) {
                         stack_pop(&op);
                     }
                     w = getToken(fr);
-                    while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                        switch (w) {
-                            case ANNO:
-                                strcpy(notes[note_num++].data, token_text_);
-                                notes->row = row_;
-                                break;
-                            case INCLUDE:
-                                strcpy(include[include_num++], token_text_);
-                                break;
-                            case DEFINE:
-                                strcpy(define[define_num++], token_text_);
-                                break;
-                        }
-                        w = getToken(fr);
-                    }
+                    ignore(&w);
                     break;
                 case '>':
                     t2 = ((ASTTree *) stack_top(&opn));
@@ -1451,21 +910,7 @@ ASTTree *Expression(int end) {
                     stack_push(&op, p);
 
                     w = getToken(fr);
-                    while (w == ANNO || w == INCLUDE || w == DEFINE) {
-                        switch (w) {
-                            case ANNO:
-                                strcpy(notes[note_num++].data, token_text_);
-                                notes->row = row_;
-                                break;
-                            case INCLUDE:
-                                strcpy(include[include_num++], token_text_);
-                                break;
-                            case DEFINE:
-                                strcpy(define[define_num++], token_text_);
-                                break;
-                        }
-                        w = getToken(fr);
-                    }
+                    ignore(&w);
                     break;
                 case '\0':
                     stack_free(&op);
@@ -1524,41 +969,13 @@ ASTTree *ActualParaList() {
         return NULL;
     }
     w = getToken(fr);
-    while (w == ANNO || w == INCLUDE || w == DEFINE) {
-        switch (w) {
-            case ANNO:
-                strcpy(notes[note_num++].data, token_text_);
-                notes->row = row_;
-                break;
-            case INCLUDE:
-                strcpy(include[include_num++], token_text_);
-                break;
-            case DEFINE:
-                strcpy(define[define_num++], token_text_);
-                break;
-        }
-        w = getToken(fr);
-    }
+    ignore(&w);
     if (w == RP) {
         return NULL;
     }
     if (w == COMMA) {
         w = getToken(fr);
-        while (w == ANNO || w == INCLUDE || w == DEFINE) {
-            switch (w) {
-                case ANNO:
-                    strcpy(notes[note_num++].data, token_text_);
-                    notes->row = row_;
-                    break;
-                case INCLUDE:
-                    strcpy(include[include_num++], token_text_);
-                    break;
-                case DEFINE:
-                    strcpy(define[define_num++], token_text_);
-                    break;
-            }
-            w = getToken(fr);
-        }
+        ignore(&w);
     }
 
     ASTTree *root = newNode(ACTUALPARALIST);
