@@ -152,6 +152,8 @@ void Warning(char *s);
 
 void clearToken();
 
+char get_char(FILE *fp);
+
 int getToken(FILE *);
 
 /**************************************

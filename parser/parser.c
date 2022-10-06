@@ -1619,31 +1619,29 @@ void showType(int cur_type)
 
 void preorderTranverse(ASTTree *root, int depth, int isend)
 {
-    if (root == NULL)
-        ;
-    else
+    if (root != NULL)
     {
         int i;
         for (i = 0; i < depth; i++)
         {
             if (line[i] == 1)
             {
-                printf("   ");
+                printf("    ");
             }
             else
             {
-                printf("│  ");
+                printf("  │ ");
             }
         }
         if (depth >= 0)
         {
             line[depth] = isend;
-            isend ? printf("└──") : printf("├──");
+            isend ? printf("  └──") : printf("  ├──");
         }
         showType(root->type);
         if (root->data.data != NULL)
         {
-            printf(": %s", root->data.data);
+            printf(": \e[34m%s\e[0m", root->data.data);
         }
         putchar('\n');
         isend = root->r == NULL;
