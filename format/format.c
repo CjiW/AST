@@ -384,7 +384,7 @@ void formatTree(ASTTree *T, int depth)
             formatTree(T->r, depth);
         break;
     // // do-while语句体
-    // DOWHILEBODY,
+    // DOWHILEBODY, 未使用，由 复合语句 代替
     // // do-while条件
     // DOWHILECONDITION,
     case DOWHILECONDITION:
