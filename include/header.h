@@ -163,8 +163,10 @@ int lexicalAnalyse();
 /**************************************
  *           Symbol Table             *
  **************************************/
-#define VAR 0
-#define FUNC 1
+typedef enum IdentType{
+    VAR=0, 
+    FUNC=1
+} IdentType; 
 typedef struct Note
 {
     int row;
