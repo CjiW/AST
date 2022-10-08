@@ -5,7 +5,7 @@ int main(void) {
     char tmps[400];
     while (1) {
         system("clear");
-        // system("cls");
+        // system("cls");// windows 平台请注释上一行，并取消本行注释
         printf(" +----------------------------+\n");
         printf(" |    Choose A Function       |\n");
         printf(" |    1. Lexical Analysis     |\n");
@@ -49,14 +49,14 @@ int main(void) {
                 printf("Press any key to continue\n");
                 fclose(fr);
                 fclose(fw);
-                sprintf(tmps, "code -d %s %s", fileIn, fileOut);
-                system(tmps);
+                // sprintf(tmps, "code -d %s %s", fileIn, fileOut);
+                // system(tmps); // 快捷查看格式化后的文件
                 getchar();
                 getchar();
                 break;
             case 0:
                 system("clear");
-                // system("cls");
+                // system("cls");// windows 平台请注释上一行，并取消本行注释
                 printf("Thanks for using!\n");
                 return 0;
             default:
