@@ -3,6 +3,7 @@
 int lexicalAnalyse() {
     int type;
     row_ = 1;
+    isEOF = 0;
     clearToken();
     if (fr == NULL) {
         printf("fail to open file\n");
@@ -165,7 +166,7 @@ int lexicalAnalyse() {
             }
             printf("\t%s\n", token_text_);
         } else {
-            printf("\tError in row_ %d\n", row_);
+            Warning("Error token");
             break;
         }
     } while (type != EOF);

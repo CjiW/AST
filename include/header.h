@@ -36,6 +36,7 @@ void stack_free(Stack *stack);
  **************************************/
 #define MAX_LEN 128
 extern int row_;
+extern int isEOF;
 extern char token_text_[MAX_LEN];
 typedef enum TokenType
 {

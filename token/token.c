@@ -34,7 +34,7 @@ int isAlpha(char c)
 
 void Warning(char *s)
 {
-    printf("[line:%d]ERROR: %s\n", row_, s);
+    printf("[line:%d]ERROR: %s\n%s\n", row_, s, token_text_);
 }
 
 int isLetterOrNumOr_(char c) { return isAlpha(c) || isNum(c) || c == '_'; }
@@ -118,6 +118,7 @@ int getToken(FILE *fp)
             }
             if (c != ']')
             {
+                add2token(c);
                 return ERROR_TOKEN;
             }
             add2token(c);
@@ -152,6 +153,7 @@ int getToken(FILE *fp)
                 if ((!isSpace(c)) && c != ';' && c != ')' && c != '+' && c != '-' && c != '*' && c != '/' && c != '|' &&
                     c != '&')
                 {
+                    add2token(c);
                     return ERROR_TOKEN;
                 }
                 ungetc(c, fp);
@@ -171,6 +173,7 @@ int getToken(FILE *fp)
                 }
                 if ((!isSpace(c)) && c != ';' && c != ')' && c != '+' && c != '-' && c != '*' && c != '/')
                 {
+                    add2token(c);
                     return ERROR_TOKEN;
                 }
                 ungetc(c, fp);
@@ -212,6 +215,7 @@ int getToken(FILE *fp)
                 ungetc(c, fp);
                 return DOUBLE_CONST;
             }
+            add2token(c);
             return ERROR_TOKEN;
         }
         if (c == 'L' || c == 'l')
@@ -245,6 +249,7 @@ int getToken(FILE *fp)
             }
             else
             {
+                add2token(c);
                 return ERROR_TOKEN;
             }
         }
@@ -261,6 +266,7 @@ int getToken(FILE *fp)
                 }
                 else
                 {
+                    add2token(c);
                     return ERROR_TOKEN;
                 }
             }
@@ -285,11 +291,13 @@ int getToken(FILE *fp)
                     }
                     else
                     {
+                        add2token(c);
                         return ERROR_TOKEN;
                     }
                 }
                 else
                 {
+                    add2token(c);
                     return ERROR_TOKEN;
                 }
             }
@@ -310,6 +318,7 @@ int getToken(FILE *fp)
                         }
                         else
                         {
+                            add2token(c);
                             return ERROR_TOKEN;
                         }
                     }
@@ -320,6 +329,7 @@ int getToken(FILE *fp)
                     }
                     else
                     {
+                        add2token(c);
                         return ERROR_TOKEN;
                     }
                 }
@@ -333,12 +343,14 @@ int getToken(FILE *fp)
                     else
                     {
                         ungetc(c, fp);
+                        add2token(c);
                         return ERROR_TOKEN;
                     }
                 }
             }
             else
             {
+                add2token(c);
                 return ERROR_TOKEN;
             }
         }
@@ -362,6 +374,7 @@ int getToken(FILE *fp)
         }
         else
         {
+            add2token(c);
             return ERROR_TOKEN;
         }
 
@@ -438,11 +451,13 @@ int getToken(FILE *fp)
             }
             else
             {
+                add2token(c);
                 return ERROR_TOKEN;
             }
         }
         else
         {
+            add2token(c);
             return ERROR_TOKEN;
         }
     case ',':
@@ -472,6 +487,7 @@ int getToken(FILE *fp)
         }
         else
         {
+            add2token(c);
             return ERROR_TOKEN;
         }
     case '+':
@@ -532,6 +548,7 @@ int getToken(FILE *fp)
             add2token(c);
             return AND;
         }
+        add2token(c);
         return ERROR_TOKEN;
     case '|':
         add2token(c);
@@ -540,10 +557,12 @@ int getToken(FILE *fp)
             add2token(c);
             return OR;
         }
+        add2token(c);
         return ERROR_TOKEN;
     case EOF:
         return EOF;
     default:
+        add2token(c);
         return ERROR_TOKEN;
     }
 }
